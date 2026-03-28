@@ -219,7 +219,7 @@ Invoke-RestMethod http://localhost:47777/perplexity `
 # Look for the PerplexityXPC icon in the notification area (bottom-right)
 
 # 5. Test the hotkey
-# Press Ctrl+Alt+P - the query popup should appear
+# Press Ctrl+Shift+A - the query popup should appear
 ```
 
 ---

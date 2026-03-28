@@ -107,7 +107,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         // ── Hotkey ────────────────────────────────────────────────────────────
         _hotkeyManager = new HotkeyManager();
         _hotkeyManager.HotkeyPressed += (_, _) => ShowQueryPopup();
-        _hotkeyManager.Register(Keys.P, ModifierKeys.Control | ModifierKeys.Alt);
+        _hotkeyManager.Register(Keys.A, ModifierKeys.Control | ModifierKeys.Shift);
 
         // ── Status polling ────────────────────────────────────────────────────
         _pollTimer = new System.Windows.Forms.Timer { Interval = 5_000 };

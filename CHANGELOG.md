@@ -11,7 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 ### Added
 
 - **Windows Service broker** (`PerplexityXPC.Service`) with HTTP and WebSocket endpoints bound exclusively to `127.0.0.1:47777` via Kestrel
-- **System tray application** (`PerplexityXPC.Tray`) with `Ctrl+Alt+P` global hotkey, floating query popup, dark/light theme support, and per-MCP-server status indicators
+- **System tray application** (`PerplexityXPC.Tray`) with `Ctrl+Shift+A` global hotkey, floating query popup, dark/light theme support, and per-MCP-server status indicators
 - **Explorer context menu integration** (`PerplexityXPC.ContextMenu`) for right-click analysis of text files and folders via Windows Shell extension
 - **MCP server manager** with JSON-RPC 2.0 over stdio, supporting auto-start, auto-restart on crash, and per-server enable/disable
 - **Perplexity Sonar API proxy** supporting all four models: `sonar`, `sonar-pro`, `sonar-reasoning-pro`, `sonar-deep-research`

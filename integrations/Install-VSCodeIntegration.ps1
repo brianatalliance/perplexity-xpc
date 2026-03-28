@@ -374,5 +374,5 @@ if ($Uninstall) {
 }
 
 Write-Host ''
-Write-Host 'Done. Reload VS Code window (Ctrl+Alt+P > "Developer: Reload Window") to apply changes.' -ForegroundColor Green
+Write-Host 'Done. Reload VS Code window (Ctrl+Shift+A > "Developer: Reload Window") to apply changes.' -ForegroundColor Green
 Write-Host ''
