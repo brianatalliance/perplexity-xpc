@@ -286,7 +286,7 @@ if (Test-Path $configDir) {
         }
     }
 } else {
-    Write-Warn "Config directory not found ($configDir) — installer will generate defaults at runtime."
+    Write-Warn ('Config directory not found ({0}) — installer will generate defaults at runtime.' -f $configDir)
 }
 #endregion
 
@@ -327,12 +327,14 @@ $elapsed = (Get-Date) - $buildStart
 if (-not $Quiet) {
     Write-Host ""
     Write-Host "==========================================" -ForegroundColor Green
-    Write-Host "   Build completed in $([Math]::Round($elapsed.TotalSeconds, 1))s" -ForegroundColor Green
+    $elapsedSec = [Math]::Round($elapsed.TotalSeconds, 1)
+    Write-Host "   Build completed in ${elapsedSec}s" -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Next step: run the installer" -ForegroundColor Yellow
-    Write-Host "    cd `"$(Split-Path -Parent $OutputPath)`"" -ForegroundColor DarkGray
-    Write-Host "    .\bin\scripts\Install-PerplexityXPC.ps1" -ForegroundColor DarkGray
+    $parentPath = Split-Path -Parent $OutputPath
+    Write-Host ('    cd "{0}"' -f $parentPath) -ForegroundColor DarkGray
+    Write-Host '    .\bin\scripts\Install-PerplexityXPC.ps1' -ForegroundColor DarkGray
     Write-Host ""
 }
 #endregion
