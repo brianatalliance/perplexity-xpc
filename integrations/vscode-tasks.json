@@ -7,12 +7,12 @@
     //     Tasks will appear under Terminal > Run Task for that project.
     //
     //   Option B - Global user tasks:
-    //     Open the Command Palette (Ctrl+Shift+P)
+    //     Open the Command Palette (Ctrl+Alt+P)
     //     Run: "Tasks: Open User Tasks"
     //     Merge the "tasks" array below into the existing tasks.json
     //
     // USAGE:
-    //   Terminal > Run Task (Ctrl+Shift+P > "Run Task") then pick a Perplexity task.
+    //   Terminal > Run Task (Ctrl+Alt+P > "Run Task") then pick a Perplexity task.
     //   The ${file} variable expands to the full path of the currently active file.
     //
     // REQUIREMENTS:

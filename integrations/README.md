@@ -194,7 +194,7 @@ Get-Process | Out-String | Explain-Output
 
 ## VS Code Task Reference
 
-Access tasks via `Terminal > Run Task` or `Ctrl+Shift+P > "Run Task"`.
+Access tasks via `Terminal > Run Task` or `Ctrl+Alt+P > "Run Task"`.
 
 | Task Label | Command Executed |
 |------------|-----------------|

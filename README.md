@@ -36,7 +36,7 @@ PerplexityXPC runs a Windows Service that binds exclusively to `127.0.0.1:47777`
 |                                                                     |
 |  +------------------+    Named Pipe    +--------------------------+ |
 |  |  System Tray App  | <-------------> |    Windows Service       | |
-|  |  (Ctrl+Shift+P)  |                 |    (PerplexityXPC)       | |
+|  |  (Ctrl+Alt+P)  |                 |    (PerplexityXPC)       | |
 |  +------------------+                 |                          | |
 |                                       |  HTTP: 127.0.0.1:47777   | |
 |  +------------------+    HTTP/SSE     |  WS:   ws://127.0.0.1:   | |
@@ -71,7 +71,7 @@ PerplexityXPC runs a Windows Service that binds exclusively to `127.0.0.1:47777`
 ## Features
 
 - **Windows Service broker** - Kestrel HTTP/WebSocket server bound to `127.0.0.1:47777` only
-- **System tray application** - `Ctrl+Shift+P` global hotkey for a floating query popup
+- **System tray application** - `Ctrl+Alt+P` global hotkey for a floating query popup
 - **Explorer context menu** - Right-click any text file or folder to send it to Perplexity
 - **MCP server manager** - Start, stop, and restart MCP servers via JSON-RPC 2.0 over stdio
 - **Perplexity Sonar proxy** - Supports all four Sonar models with full parameter pass-through
@@ -168,7 +168,7 @@ Invoke-RestMethod http://localhost:47777/perplexity -Method Post `
 
 ### Hotkey and Tray App
 
-Press `Ctrl+Shift+P` from anywhere in Windows to open the floating query popup.
+Press `Ctrl+Alt+P` from anywhere in Windows to open the floating query popup.
 
 The system tray icon shows service health:
 - **Green** - Service running, API key configured

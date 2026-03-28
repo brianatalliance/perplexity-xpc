@@ -53,12 +53,12 @@ internal sealed class Settings : ApplicationSettingsBase
 
     // ── General ────────────────────────────────────────────────────────────────
 
-    /// <summary>Global hotkey string, e.g. <c>"Ctrl+Shift+P"</c>.</summary>
+    /// <summary>Global hotkey string, e.g. <c>"Ctrl+Alt+P"</c>.</summary>
     [UserScopedSetting]
-    [DefaultSettingValue("Ctrl+Shift+P")]
+    [DefaultSettingValue("Ctrl+Alt+P")]
     public string Hotkey
     {
-        get => (string)(this[nameof(Hotkey)] ?? "Ctrl+Shift+P");
+        get => (string)(this[nameof(Hotkey)] ?? "Ctrl+Alt+P");
         set => this[nameof(Hotkey)] = value;
     }
 
