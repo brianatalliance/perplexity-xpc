@@ -279,7 +279,7 @@ public sealed class ServiceClient : IDisposable
             ".", _pipeName, PipeDirection.InOut,
             PipeOptions.Asynchronous);
 
-        await pipe.ConnectAsync(timeoutMs: 2_000, ct);
+        await pipe.ConnectAsync(2_000, ct);
 
         using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
         using var reader = new StreamReader(pipe, leaveOpen: true);

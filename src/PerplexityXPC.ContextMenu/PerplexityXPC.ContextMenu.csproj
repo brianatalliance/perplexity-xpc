@@ -13,7 +13,7 @@
     <Product>PerplexityXPC Context Menu Handler</Product>
     <Description>Windows Explorer context menu handler for PerplexityXPC — reads file/folder content and sends it to the local Perplexity broker service.</Description>
     <Copyright>Copyright © 2025 PerplexityXPC</Copyright>
-    <ApplicationIcon>Resources\perplexity.ico</ApplicationIcon>
+    <!-- ApplicationIcon removed — no .ico file bundled; icon set at runtime -->
 
     <!-- Self-contained single-file publish for zero-dependency deployment -->
     <SelfContained>true</SelfContained>
