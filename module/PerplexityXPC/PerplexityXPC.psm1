@@ -98,14 +98,19 @@ function ConvertTo-XPCBody {
         [string]$RecencyFilter
     )
 
+    $messages = [System.Collections.ArrayList]::new()
+    if ($SystemPrompt) {
+        $null = $messages.Add(@{ role = 'system'; content = $SystemPrompt })
+    }
+    $null = $messages.Add(@{ role = 'user'; content = $Query })
+
     $body = @{
-        query  = $Query
-        model  = $Model
-        search_mode = $SearchMode
+        model    = $Model
+        messages = @($messages)
     }
 
-    if ($SystemPrompt) {
-        $body['system_prompt'] = $SystemPrompt
+    if ($SearchMode -and $SearchMode -ne 'web') {
+        $body['search_mode'] = $SearchMode
     }
 
     if ($Temperature -ge 0) {
