@@ -1,0 +1,52 @@
+{
+  "__comment": "PerplexityXPC MCP Servers configuration. Copied to %LOCALAPPDATA%\\PerplexityXPC\\mcp-servers.json on install.",
+  "__doc": "Each key under 'mcpServers' is a unique server ID. Set 'disabled': true to temporarily exclude a server.",
+
+  "mcpServers": {
+
+    "filesystem-example": {
+      "disabled": true,
+      "description": "Grants Perplexity read/write access to a local directory tree via the MCP Filesystem server.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\USERNAME\\Documents"],
+      "env": {}
+    },
+
+    "brave-search-example": {
+      "disabled": true,
+      "description": "Enables web search via the Brave Search API. Requires a BRAVE_API_KEY environment variable.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key-here"
+      }
+    },
+
+    "sqlite-example": {
+      "disabled": true,
+      "description": "Read-only access to a SQLite database via MCP.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "C:\\Users\\USERNAME\\data\\mydb.sqlite"],
+      "env": {}
+    },
+
+    "memory-example": {
+      "disabled": true,
+      "description": "Persistent key-value memory store for the AI across sessions.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {}
+    },
+
+    "github-example": {
+      "disabled": true,
+      "description": "GitHub repository access — read files, issues, PRs. Requires GITHUB_PERSONAL_ACCESS_TOKEN.",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "github_pat_your_token_here"
+      }
+    }
+
+  }
+}

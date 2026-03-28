@@ -1,0 +1,31 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vsidx
+.vs/
+*.DotSettings.user
+publish/
+
+## Build output
+/bin/
+
+## OS files
+Thumbs.db
+.DS_Store
+
+## Sensitive data
+api-key.enc
+*.enc
+
+## Logs
+*.log
+
+## IDE
+.idea/
+.vscode/
+
+## Marker files
+*_DONE.md

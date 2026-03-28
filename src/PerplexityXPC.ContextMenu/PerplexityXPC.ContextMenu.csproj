@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Target Windows only — uses Named Pipes and Win32 P/Invoke -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PerplexityXPC.ContextMenu</AssemblyName>
+    <RootNamespace>PerplexityXPC.ContextMenu</RootNamespace>
+
+    <!-- Metadata -->
+    <Version>1.0.0</Version>
+    <Company>PerplexityXPC</Company>
+    <Product>PerplexityXPC Context Menu Handler</Product>
+    <Description>Windows Explorer context menu handler for PerplexityXPC — reads file/folder content and sends it to the local Perplexity broker service.</Description>
+    <Copyright>Copyright © 2025 PerplexityXPC</Copyright>
+    <ApplicationIcon>Resources\perplexity.ico</ApplicationIcon>
+
+    <!-- Self-contained single-file publish for zero-dependency deployment -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Trimming — keep reflection-heavy paths needed for System.Text.Json -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+
+    <!-- Fast startup is critical for a right-click handler -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+
+    <!-- Remove console window flash for end-users launching from Explorer -->
+    <!-- Keep Exe (not WinExe) so that console output works when invoked from terminal -->
+
+    <!-- Nullable and implicit usings -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Treat warnings as errors in CI; remove for development -->
+    <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
+
+    <!-- Suppress trim analysis warnings from WScript.Shell COM usage -->
+    <NoWarn>IL2026;IL2055;IL2075;IL2095</NoWarn>
+  </PropertyGroup>
+
+  <!-- Win32 application manifest — requests "asInvoker" (no UAC prompt) -->
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Embedded resources -->
+    <EmbeddedResource Include="Resources\perplexity.ico" Condition="Exists('Resources\perplexity.ico')" />
+  </ItemGroup>
+
+  <!-- No external NuGet packages needed — all APIs are in-box for .NET 8 -->
+
+</Project>
