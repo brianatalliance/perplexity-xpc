@@ -114,8 +114,8 @@ public sealed class TrayApplicationContext : ApplicationContext
         _pollTimer.Tick += async (_, _) => await PollServiceStatusAsync();
         _pollTimer.Start();
 
-        // Immediate first poll
-        _ = Task.Run(PollServiceStatusAsync);
+        // Delay first poll to let the window handle be created
+        _ = Task.Run(async () => { await Task.Delay(2000); await PollServiceStatusAsync(); });
 
         // ── IPC server (listen for "SHOW" from second instance) ───────────────
         _ipcServerTask = Task.Run(() => RunIpcServerAsync(_ipcCts.Token));
@@ -206,13 +206,24 @@ public sealed class TrayApplicationContext : ApplicationContext
             mcpServers = [];
         }
 
-        // Marshal back to UI thread
-        _trayIcon.ContextMenuStrip?.Invoke(() =>
+        // Marshal back to UI thread (guard against handle not yet created)
+        var strip = _trayIcon.ContextMenuStrip;
+        if (strip is not null && strip.IsHandleCreated)
         {
+            strip.Invoke(() =>
+            {
+                _currentStatus = newStatus;
+                ApplyStatus(newStatus);
+                RefreshMcpSubmenu(mcpServers);
+            });
+        }
+        else
+        {
+            // Handle not ready yet - update directly (safe if called from UI thread)
             _currentStatus = newStatus;
             ApplyStatus(newStatus);
             RefreshMcpSubmenu(mcpServers);
-        });
+        }
     }
 
     private void ApplyStatus(ServiceStatus status)
