@@ -111,11 +111,11 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         // ── Status polling ────────────────────────────────────────────────────
         _pollTimer = new System.Windows.Forms.Timer { Interval = 5_000 };
-        _pollTimer.Tick += async (_, _) => await PollServiceStatusAsync();
-        _pollTimer.Start();
-
-        // Delay first poll to let the window handle be created
-        _ = Task.Run(async () => { await Task.Delay(2000); await PollServiceStatusAsync(); });
+        _pollTimer.Tick += (_, _) => { try { _ = PollServiceStatusAsync(); } catch { /* swallow */ } };
+        // Delay start so handles are ready
+        var delayTimer = new System.Windows.Forms.Timer { Interval = 3_000 };
+        delayTimer.Tick += (_, _) => { delayTimer.Stop(); delayTimer.Dispose(); _pollTimer.Start(); };
+        delayTimer.Start();
 
         // ── IPC server (listen for "SHOW" from second instance) ───────────────
         _ipcServerTask = Task.Run(() => RunIpcServerAsync(_ipcCts.Token));
@@ -206,23 +206,16 @@ public sealed class TrayApplicationContext : ApplicationContext
             mcpServers = [];
         }
 
-        // Marshal back to UI thread (guard against handle not yet created)
-        var strip = _trayIcon.ContextMenuStrip;
-        if (strip is not null && strip.IsHandleCreated)
+        // Update UI directly - timer fires on UI thread so no marshaling needed
+        try
         {
-            strip.Invoke(() =>
-            {
-                _currentStatus = newStatus;
-                ApplyStatus(newStatus);
-                RefreshMcpSubmenu(mcpServers);
-            });
-        }
-        else
-        {
-            // Handle not ready yet - update directly (safe if called from UI thread)
             _currentStatus = newStatus;
             ApplyStatus(newStatus);
             RefreshMcpSubmenu(mcpServers);
+        }
+        catch
+        {
+            // Swallow UI update errors during startup
         }
     }
 
