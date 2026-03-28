@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "summon-aunties": {
+      "disabled": false,
+      "command": "C:\\Program Files\\PerplexityXPC\\PerplexityXPC.McpServer.exe",
+      "args": [],
+      "description": "Built-in MCP server - filesystem, system info, event logs, registry, PowerShell, clipboard, Perplexity proxy",
+      "auto_start": true
+    }
+  }
+}
