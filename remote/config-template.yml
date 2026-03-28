@@ -1,0 +1,87 @@
+# ============================================================
+# PerplexityXPC - Cloudflare Tunnel Configuration Template
+# ============================================================
+#
+# This file configures a Cloudflare Tunnel that securely routes
+# external HTTPS traffic to the local RemoteGateway service.
+#
+# USAGE:
+#   1. Replace <tunnel-id> with your tunnel's UUID
+#      (run: cloudflared tunnel list)
+#   2. Replace <your-domain.com> with your actual domain
+#   3. Replace <tunnel-id> in credentials-file path
+#   4. Save to: %USERPROFILE%\.cloudflared\config.yml
+#   5. Start with: cloudflared tunnel run perplexity-xpc
+#
+# Or use the setup script which fills this in automatically:
+#   .\Install-CloudflareTunnel.ps1 -Hostname xpc.yourdomain.com
+# ============================================================
+
+
+# ---- Tunnel Identity ----
+
+# The UUID of your tunnel.
+# Obtain with: cloudflared tunnel list
+tunnel: <tunnel-id>
+
+# Path to the credentials JSON file for this tunnel.
+# Created automatically when you run: cloudflared tunnel create perplexity-xpc
+credentials-file: C:\Users\<username>\.cloudflared\<tunnel-id>.json
+
+
+# ---- Ingress Rules ----
+#
+# Rules are evaluated top-to-bottom.
+# The first matching rule wins.
+# The final rule MUST be a catch-all (no hostname/path filter).
+
+ingress:
+
+    # Primary rule: route traffic for your hostname to the local gateway.
+    #
+    # hostname: The public domain/subdomain you set up in Cloudflare DNS.
+    #           This must have a CNAME record pointing to <tunnel-id>.cfargotunnel.com
+    #           Set up with: cloudflared tunnel route dns perplexity-xpc xpc.yourdomain.com
+    #
+    # service:  The local URL to proxy requests to.
+    #           RemoteGateway listens on loopback only (127.0.0.1) for security.
+  - hostname: xpc.<your-domain>.com
+    service: http://127.0.0.1:47778
+
+    # originRequest: Fine-grained options for how cloudflared connects to the origin.
+    originRequest:
+      # noTLSVerify: Set to true because the origin uses plain HTTP (not HTTPS).
+      # The tunnel itself provides TLS between the client and Cloudflare edge.
+      noTLSVerify: true
+
+      # connectTimeout: How long to wait for a connection to the origin service.
+      connectTimeout: 30s
+
+      # tcpKeepAlive: Keep-alive interval for long-running requests.
+      tcpKeepAlive: 30s
+
+      # http2Origin: Disable HTTP/2 to origin (plain HTTP/1.1 is fine for local).
+      http2Origin: false
+
+
+  # ---- Optional: health check endpoint (no auth) ----
+  # Uncomment to expose /health on a separate subdomain without Cloudflare Access.
+  # Useful for uptime monitoring tools.
+  #
+  # - hostname: xpc-health.<your-domain>.com
+  #   path: /health
+  #   service: http://127.0.0.1:47778
+
+
+  # ---- Catch-all rule (required) ----
+  # Any request that does not match a rule above returns a 404.
+  # This MUST be the last rule.
+  - service: http_status:404
+
+
+# ---- Optional: Logging ----
+#
+# Uncomment to write tunnel logs to a file.
+# logfile: C:\Users\<username>\.cloudflared\tunnel.log
+# loglevel: info
+# transport-loglevel: warn

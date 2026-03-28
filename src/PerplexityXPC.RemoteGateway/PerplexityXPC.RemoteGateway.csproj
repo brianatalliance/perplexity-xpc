@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.2.0</Version>
+    <AssemblyName>PerplexityXPC.RemoteGateway</AssemblyName>
+    <RootNamespace>PerplexityXPC.RemoteGateway</RootNamespace>
+    <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.*" />
+    <PackageReference Include="System.Management" Version="8.0.*" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.*" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.*" />
+  </ItemGroup>
+
+</Project>
