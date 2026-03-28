@@ -7,7 +7,7 @@
     Service on http://127.0.0.1:47777 and proxies requests to the Perplexity Sonar
     API with MCP server management.
 .NOTES
-    Author: brianatalliance
+    Author: PerplexityXPC Contributors
     Version: 1.0.0
     Compatible with PowerShell 5.1 and PowerShell 7+
 #>
@@ -1369,6 +1369,788 @@ function Invoke-PerplexitySecurityAnalysis {
         '5) Long-term hardening recommendations' -f [System.Environment]::NewLine)
 
     Invoke-Perplexity -Query $query -Model $Model -SystemPrompt $systemPrompt -Port $Port
+}
+
+#endregion
+
+#region Extended Utility Functions
+
+function Invoke-PerplexityEventAnalysis {
+    <#
+    .SYNOPSIS
+        Analyzes Windows Event Log entries through Perplexity.
+    .DESCRIPTION
+        Reads Windows Event Log entries matching specified criteria, optionally groups
+        them by source, and sends the compiled log data to the Perplexity Sonar API
+        for root cause analysis and remediation recommendations. Supports both
+        PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER LogName
+        The name of the Windows Event Log to query. Default: System.
+    .PARAMETER EntryType
+        Filter events by entry type. Valid values: Error, Warning, Critical.
+        Default: Error, Critical.
+    .PARAMETER After
+        Only include events that occurred after this datetime.
+        Default: 24 hours ago.
+    .PARAMETER MaxEvents
+        Maximum number of events to collect and analyze. Default: 20.
+    .PARAMETER GroupBySource
+        When specified, groups events by ProviderName and shows occurrence counts
+        before sending to Perplexity.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityEventAnalysis
+
+        Analyzes Error and Critical events from the System log over the past 24 hours.
+    .EXAMPLE
+        Invoke-PerplexityEventAnalysis -LogName Application -EntryType Error,Warning -After (Get-Date).AddDays(-7)
+
+        Analyzes Error and Warning events from the Application log over the past 7 days.
+    .EXAMPLE
+        Invoke-PerplexityEventAnalysis -GroupBySource -Model sonar-reasoning-pro
+
+        Analyzes grouped System log errors using the reasoning-pro model.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline = $true)]
+        [object[]]$InputObject,
+
+        [Parameter()]
+        [string]$LogName = 'System',
+
+        [Parameter()]
+        [ValidateSet('Error', 'Warning', 'Critical')]
+        [string[]]$EntryType = @('Error', 'Critical'),
+
+        [Parameter()]
+        [datetime]$After = (Get-Date).AddHours(-24),
+
+        [Parameter()]
+        [int]$MaxEvents = 20,
+
+        [Parameter()]
+        [switch]$GroupBySource,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    begin {
+        $collectedEvents = [System.Collections.ArrayList]::new()
+    }
+
+    process {
+        if ($InputObject) {
+            foreach ($evt in $InputObject) {
+                $null = $collectedEvents.Add($evt)
+            }
+        }
+    }
+
+    end {
+        # If no pipeline input, fetch from event log
+        if ($collectedEvents.Count -eq 0) {
+            # Build level filter mapping
+            $levels = [System.Collections.ArrayList]::new()
+            foreach ($type in $EntryType) {
+                switch ($type) {
+                    'Critical' { $null = $levels.Add(1) }
+                    'Error'    { $null = $levels.Add(2) }
+                    'Warning'  { $null = $levels.Add(3) }
+                }
+            }
+
+            $filterHash = @{
+                LogName   = $LogName
+                StartTime = $After
+                Level     = $levels.ToArray()
+            }
+
+            Write-Verbose "Querying event log '$LogName' for levels $($levels -join ',') since $After"
+
+            try {
+                $rawEvents = Get-WinEvent -FilterHashtable $filterHash -MaxEvents $MaxEvents -ErrorAction Stop
+                foreach ($evt in $rawEvents) {
+                    $null = $collectedEvents.Add($evt)
+                }
+            }
+            catch [System.Exception] {
+                if ($_.Exception.Message -like '*No events were found*') {
+                    Write-Warning "No events found in '$LogName' matching the specified criteria."
+                    return
+                }
+                Write-Warning "Failed to query event log: $($_.Exception.Message)"
+                return
+            }
+        }
+
+        if ($collectedEvents.Count -eq 0) {
+            Write-Warning 'No events to analyze.'
+            return
+        }
+
+        Write-Verbose "Collected $($collectedEvents.Count) event(s) for analysis."
+
+        # Format events
+        $formattedLines = [System.Collections.ArrayList]::new()
+
+        if ($GroupBySource) {
+            # Group by ProviderName
+            $groups = @{}
+            foreach ($evt in $collectedEvents) {
+                $provider = $evt.ProviderName
+                if (-not $groups.ContainsKey($provider)) {
+                    $groups[$provider] = [System.Collections.ArrayList]::new()
+                }
+                $null = $groups[$provider].Add($evt)
+            }
+
+            $null = $formattedLines.Add('--- Events grouped by source ---')
+            foreach ($provider in ($groups.Keys | Sort-Object)) {
+                $evtList = $groups[$provider]
+                $null = $formattedLines.Add(("Source: {0} ({1} occurrence(s))" -f $provider, $evtList.Count))
+                # Show first event as representative
+                $rep = $evtList[0]
+                $msg = $rep.Message
+                if ($msg -and $msg.Length -gt 500) {
+                    $msg = $msg.Substring(0, 500) + '...'
+                }
+                $null = $formattedLines.Add(("  Time: {0}  Id: {1}  Level: {2}" -f $rep.TimeCreated, $rep.Id, $rep.LevelDisplayName))
+                $null = $formattedLines.Add(("  Message: {0}" -f $msg))
+                $null = $formattedLines.Add('')
+            }
+        }
+        else {
+            foreach ($evt in $collectedEvents) {
+                $msg = $evt.Message
+                if ($msg -and $msg.Length -gt 500) {
+                    $msg = $msg.Substring(0, 500) + '...'
+                }
+                $null = $formattedLines.Add(("[{0}] Id={1} Source={2} Level={3}" -f $evt.TimeCreated, $evt.Id, $evt.ProviderName, $evt.LevelDisplayName))
+                $null = $formattedLines.Add(("  Message: {0}" -f $msg))
+                $null = $formattedLines.Add('')
+            }
+        }
+
+        $eventsText = $formattedLines -join [System.Environment]::NewLine
+        $nowStr     = (Get-Date).ToString('u')
+        $afterStr   = $After.ToString('u')
+
+        $prompt = ('You are a Windows system administrator. Analyze these Windows Event Log entries and provide:' + `
+            ' 1) Summary of issues found 2) Root cause analysis for each distinct error' + `
+            ' 3) Recommended remediation steps with PowerShell commands where applicable' + `
+            [System.Environment]::NewLine + [System.Environment]::NewLine + `
+            'Log: ' + $LogName + [System.Environment]::NewLine + `
+            'Time range: ' + $afterStr + ' to ' + $nowStr + [System.Environment]::NewLine + `
+            'Events:' + [System.Environment]::NewLine + `
+            $eventsText)
+
+        Invoke-Perplexity -Query $prompt -Model $Model -Port $Port
+    }
+}
+
+function Invoke-PerplexityNetDiag {
+    <#
+    .SYNOPSIS
+        Runs network diagnostic commands and sends results to Perplexity for analysis.
+    .DESCRIPTION
+        Executes one or more network tests (ping, tracert, nslookup, portcheck) against
+        a specified target host or IP address, then sends the compiled output to the
+        Perplexity Sonar API for analysis by a network engineering expert persona.
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER Target
+        The hostname or IP address to diagnose. Mandatory.
+    .PARAMETER Tests
+        Which diagnostic tests to run. Valid values: ping, tracert, nslookup, portcheck, all.
+        Default: all.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .PARAMETER TestPort
+        The TCP port to check during the portcheck test. Default: 443.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Context
+        Additional environment context to include in the prompt
+        (e.g., "This is our domain controller", "UniFi gateway").
+    .EXAMPLE
+        Invoke-PerplexityNetDiag 8.8.8.8
+
+        Runs all diagnostics against 8.8.8.8 and returns Perplexity analysis.
+    .EXAMPLE
+        Invoke-PerplexityNetDiag "dc01.domain.local" -Tests ping,nslookup -Context "Primary domain controller"
+
+        Runs ping and nslookup against the domain controller with contextual information.
+    .EXAMPLE
+        Invoke-PerplexityNetDiag "10.0.1.1" -Tests portcheck -TestPort 22 -Context "UniFi gateway SSH"
+
+        Checks whether TCP port 22 is open on the UniFi gateway.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Target,
+
+        [Parameter()]
+        [ValidateSet('ping', 'tracert', 'nslookup', 'portcheck', 'all')]
+        [string[]]$Tests = @('all'),
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort,
+
+        [Parameter()]
+        [int]$TestPort = 443,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [string]$Context = ''
+    )
+
+    $runAll      = $Tests -contains 'all'
+    $runPing     = $runAll -or ($Tests -contains 'ping')
+    $runTracert  = $runAll -or ($Tests -contains 'tracert')
+    $runNslookup = $runAll -or ($Tests -contains 'nslookup')
+    $runPort     = $runAll -or ($Tests -contains 'portcheck')
+
+    $outputParts = [System.Collections.ArrayList]::new()
+
+    # --- ping ---
+    if ($runPing) {
+        Write-Progress -Activity 'Network Diagnostics' -Status 'Running ping...' -PercentComplete 10
+        Write-Verbose "Running ping against $Target"
+        try {
+            $pingOut = & ping.exe -n 4 $Target 2>&1
+            $null = $outputParts.Add(("=== PING ===`n{0}" -f ($pingOut -join "`n")))
+        }
+        catch {
+            Write-Warning "ping failed: $($_.Exception.Message)"
+            $null = $outputParts.Add('=== PING ===
+ping.exe not available or failed.')
+        }
+    }
+
+    # --- tracert ---
+    if ($runTracert) {
+        Write-Progress -Activity 'Network Diagnostics' -Status 'Running tracert...' -PercentComplete 30
+        Write-Verbose "Running tracert against $Target"
+        try {
+            $traceOut = & tracert.exe -w 2000 -h 20 $Target 2>&1
+            $null = $outputParts.Add(("=== TRACERT ===`n{0}" -f ($traceOut -join "`n")))
+        }
+        catch {
+            Write-Warning "tracert failed: $($_.Exception.Message)"
+            $null = $outputParts.Add('=== TRACERT ===
+tracert.exe not available or failed.')
+        }
+    }
+
+    # --- nslookup ---
+    if ($runNslookup) {
+        Write-Progress -Activity 'Network Diagnostics' -Status 'Running nslookup...' -PercentComplete 60
+        Write-Verbose "Running nslookup (forward and reverse) for $Target"
+        try {
+            $nsOut = & nslookup.exe $Target 2>&1
+            $null = $outputParts.Add(("=== NSLOOKUP (forward) ===`n{0}" -f ($nsOut -join "`n")))
+        }
+        catch {
+            Write-Warning "nslookup forward failed: $($_.Exception.Message)"
+            $null = $outputParts.Add('=== NSLOOKUP (forward) ===
+nslookup.exe not available or failed.')
+        }
+        # Reverse lookup - only meaningful for IPs; attempt anyway
+        try {
+            $nsRevOut = & nslookup.exe -type=PTR $Target 2>&1
+            $null = $outputParts.Add(("=== NSLOOKUP (reverse PTR) ===`n{0}" -f ($nsRevOut -join "`n")))
+        }
+        catch {
+            Write-Verbose 'Reverse nslookup failed (may be expected for hostnames).'
+        }
+    }
+
+    # --- portcheck ---
+    if ($runPort) {
+        Write-Progress -Activity 'Network Diagnostics' -Status 'Running port check...' -PercentComplete 85
+        Write-Verbose "Checking TCP port ${TestPort} on $Target"
+        try {
+            $tcResult = Test-NetConnection -ComputerName $Target -Port $TestPort -WarningAction SilentlyContinue -ErrorAction Stop
+            $portStatus = if ($tcResult.TcpTestSucceeded) { 'OPEN' } else { 'CLOSED/FILTERED' }
+            $null = $outputParts.Add(("=== PORT CHECK (TCP {0}) ===`nTarget: {1}`nPort: {2}`nStatus: {3}`nLatency: {4}ms" -f `
+                $TestPort, $Target, $TestPort, $portStatus, $tcResult.PingReplyDetails.RoundtripTime))
+        }
+        catch {
+            Write-Warning "Test-NetConnection failed: $($_.Exception.Message)"
+            $null = $outputParts.Add(("=== PORT CHECK (TCP {0}) ===`nTest-NetConnection failed: {1}" -f $TestPort, $_.Exception.Message))
+        }
+    }
+
+    Write-Progress -Activity 'Network Diagnostics' -Completed
+
+    $diagOutput  = $outputParts -join ([System.Environment]::NewLine + [System.Environment]::NewLine)
+    $contextLine = if ($Context) { [System.Environment]::NewLine + 'Context: ' + $Context } else { '' }
+
+    $prompt = ('You are a network engineer specializing in enterprise networking' + `
+        ' (Ubiquiti UniFi, WatchGuard, Windows Server DNS). Analyze these network diagnostic results and provide:' + `
+        ' 1) Connectivity assessment 2) Potential issues identified' + `
+        ' 3) Recommended troubleshooting steps 4) Configuration changes if needed' + `
+        [System.Environment]::NewLine + [System.Environment]::NewLine + `
+        'Target: ' + $Target + $contextLine + `
+        [System.Environment]::NewLine + [System.Environment]::NewLine + `
+        'Results:' + [System.Environment]::NewLine + `
+        $diagOutput)
+
+    Invoke-Perplexity -Query $prompt -Model $Model -Port $Port
+}
+
+function Invoke-PerplexityCodeReview {
+    <#
+    .SYNOPSIS
+        Sends code to Perplexity for review, debugging, or improvement.
+    .DESCRIPTION
+        Accepts code as a string or reads it from a file, auto-detects the language
+        from the file extension when -Path is provided, then sends the code to the
+        Perplexity Sonar API using a focus-specific expert system prompt.
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER Code
+        The code string to review. Accepts pipeline input.
+    .PARAMETER Path
+        Path to a file whose contents should be reviewed.
+        Language is auto-detected from the file extension.
+    .PARAMETER Language
+        Language hint for the code. Auto-detected from -Path extension when available.
+        Default: PowerShell.
+    .PARAMETER Focus
+        The type of review to perform.
+        review   - Bugs, best practices, and general improvements.
+        debug    - Identify and fix bugs and logic errors.
+        optimize - Performance and efficiency improvements.
+        security - Security vulnerabilities and unsafe practices.
+        explain  - Step-by-step explanation of what the code does.
+        Default: review.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Get-Content .\script.ps1 -Raw | Invoke-PerplexityCodeReview -Focus security
+
+        Pipes a PowerShell script for a security-focused audit.
+    .EXAMPLE
+        Invoke-PerplexityCodeReview -Path .\Deploy-Server.ps1 -Focus review
+
+        Reviews a deployment script for best practices and bugs.
+    .EXAMPLE
+        Invoke-PerplexityCodeReview -Code 'Get-Process | Where-Object {$_.CPU -gt 100}' -Focus optimize
+
+        Analyzes a one-liner for performance optimization opportunities.
+    .EXAMPLE
+        Invoke-PerplexityCodeReview -Path .\config.yaml -Focus explain
+
+        Explains what a YAML configuration file does.
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'CodeString')]
+    param(
+        [Parameter(ParameterSetName = 'CodeString', ValueFromPipeline = $true)]
+        [string]$Code,
+
+        [Parameter(ParameterSetName = 'FilePath', Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter()]
+        [string]$Language = 'PowerShell',
+
+        [Parameter()]
+        [ValidateSet('review', 'debug', 'optimize', 'security', 'explain')]
+        [string]$Focus = 'review',
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    begin {
+        $codeChunks = [System.Collections.ArrayList]::new()
+    }
+
+    process {
+        if ($PSCmdlet.ParameterSetName -eq 'CodeString' -and $Code) {
+            $null = $codeChunks.Add($Code)
+        }
+    }
+
+    end {
+        $finalCode = ''
+
+        if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+            if (-not (Test-Path -LiteralPath $Path)) {
+                Write-Warning "File not found: $Path"
+                return
+            }
+
+            # Auto-detect language from extension
+            $ext = [System.IO.Path]::GetExtension($Path).ToLower()
+            switch ($ext) {
+                '.ps1'  { $Language = 'PowerShell' }
+                '.psm1' { $Language = 'PowerShell' }
+                '.psd1' { $Language = 'PowerShell' }
+                '.py'   { $Language = 'Python' }
+                '.cs'   { $Language = 'C#' }
+                '.sh'   { $Language = 'Bash' }
+                '.yaml' { $Language = 'YAML' }
+                '.yml'  { $Language = 'YAML' }
+                '.json' { $Language = 'JSON' }
+                '.xml'  { $Language = 'XML' }
+            }
+            Write-Verbose "Detected language '$Language' from extension '$ext'"
+
+            $rawContent = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+            if ($rawContent.Length -gt 15000) {
+                Write-Warning "File exceeds 15000 characters; truncating to first 15000 chars."
+                $rawContent = $rawContent.Substring(0, 15000)
+            }
+            $finalCode = $rawContent
+        }
+        else {
+            $finalCode = $codeChunks -join [System.Environment]::NewLine
+        }
+
+        if ([string]::IsNullOrWhiteSpace($finalCode)) {
+            Write-Warning 'No code provided. Supply -Code, -Path, or pipe code as a string.'
+            return
+        }
+
+        # Build focus-specific system prompt
+        $systemPrompt = switch ($Focus) {
+            'review' {
+                'You are a senior code reviewer. Analyze this code for bugs, security issues,' + `
+                ' best practices violations, and potential improvements. Provide specific line-level feedback.'
+            }
+            'debug' {
+                'You are a debugging expert. Identify bugs, logic errors, and runtime issues in this code.' + `
+                ' Explain the root cause and provide corrected code.'
+            }
+            'optimize' {
+                'You are a performance optimization expert. Analyze this code for performance bottlenecks,' + `
+                ' memory issues, and inefficiencies. Suggest optimized alternatives.'
+            }
+            'security' {
+                'You are a cybersecurity code auditor. Analyze this code for security vulnerabilities,' + `
+                ' injection risks, credential exposure, and unsafe practices. Provide remediation.'
+            }
+            'explain' {
+                'You are a code educator. Explain this code step by step in clear language.' + `
+                ' Describe what each section does and why.'
+            }
+        }
+
+        $query = ('Language: {0}{1}{1}```{0}{1}{2}{1}```' -f `
+            $Language, [System.Environment]::NewLine, $finalCode)
+
+        Invoke-Perplexity -Query $query -Model $Model -SystemPrompt $systemPrompt -Port $Port
+    }
+}
+
+function Send-XPCNotification {
+    <#
+    .SYNOPSIS
+        Shows a Windows toast notification with a title and body.
+    .DESCRIPTION
+        Attempts to display a Windows toast notification using the best available
+        method in this order:
+        1. Windows.UI.Notifications.ToastNotificationManager (Windows 10/11 native)
+        2. BurntToast PowerShell module if installed
+        3. System.Windows.Forms.NotifyIcon balloon tip as a final fallback
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER Title
+        The notification title text. Mandatory.
+    .PARAMETER Body
+        The notification body text. Mandatory.
+    .PARAMETER ActionUrl
+        Optional URL to open when the notification is clicked (where supported).
+    .EXAMPLE
+        Send-XPCNotification -Title "Query Complete" -Body "VLAN trunking uses 802.1Q tagging to carry multiple VLANs over a single link."
+
+        Shows a toast notification with the result of a query.
+    .EXAMPLE
+        Invoke-Perplexity "What is OSPF?" | ForEach-Object { Send-XPCNotification -Title "Perplexity Result" -Body $_ }
+
+        Pipes a Perplexity result into a toast notification.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Title,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Body,
+
+        [Parameter()]
+        [string]$ActionUrl = ''
+    )
+
+    # Method 1 - Windows.UI.Notifications (Win10+ native)
+    $toastSuccess = $false
+    try {
+        $null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+        $template = [Windows.UI.Notifications.ToastTemplateType]::ToastText02
+        $xml      = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent($template)
+        $nodes    = $xml.GetElementsByTagName('text')
+        $nodes.Item(0).AppendChild($xml.CreateTextNode($Title)) | Out-Null
+        $nodes.Item(1).AppendChild($xml.CreateTextNode($Body))  | Out-Null
+
+        $appId  = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
+        $toast  = [Windows.UI.Notifications.ToastNotification]::new($xml)
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+        $toastSuccess = $true
+        Write-Verbose 'Notification shown via Windows.UI.Notifications.'
+    }
+    catch {
+        Write-Verbose "Windows.UI.Notifications not available: $($_.Exception.Message)"
+    }
+
+    # Method 2 - BurntToast module
+    if (-not $toastSuccess) {
+        if (Get-Module -Name BurntToast -ListAvailable -ErrorAction SilentlyContinue) {
+            try {
+                Import-Module BurntToast -ErrorAction Stop
+                if ($ActionUrl) {
+                    New-BurntToastNotification -Text $Title, $Body -ActivatedApp $ActionUrl
+                }
+                else {
+                    New-BurntToastNotification -Text $Title, $Body
+                }
+                $toastSuccess = $true
+                Write-Verbose 'Notification shown via BurntToast module.'
+            }
+            catch {
+                Write-Verbose "BurntToast failed: $($_.Exception.Message)"
+            }
+        }
+    }
+
+    # Method 3 - WinForms NotifyIcon balloon tip
+    if (-not $toastSuccess) {
+        try {
+            Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+            $notify = [System.Windows.Forms.NotifyIcon]::new()
+            $notify.Icon    = [System.Drawing.SystemIcons]::Information
+            $notify.Visible = $true
+            $notify.ShowBalloonTip(5000, $Title, $Body, [System.Windows.Forms.ToolTipIcon]::Info)
+            Start-Sleep -Seconds 6
+            $notify.Dispose()
+            $toastSuccess = $true
+            Write-Verbose 'Notification shown via NotifyIcon balloon tip.'
+        }
+        catch {
+            Write-Warning "All notification methods failed. Last error: $($_.Exception.Message)"
+            Write-Warning "Title: $Title"
+            Write-Warning "Body : $Body"
+        }
+    }
+
+    if ($toastSuccess -and $ActionUrl) {
+        Write-Verbose "ActionUrl '$ActionUrl' is set - URL launch supported only in native WinRT toast path."
+    }
+}
+
+function Watch-XPCClipboard {
+    <#
+    .SYNOPSIS
+        Monitors the clipboard and optionally queries Perplexity when new text is copied.
+    .DESCRIPTION
+        Polls the Windows clipboard at a configurable interval. When new text is detected
+        that differs from the last check, it either notifies the user or automatically
+        sends the text to Perplexity (when -AutoQuery is specified).
+        Runs continuously until interrupted with Ctrl+C.
+        Requires STA threading mode - issues a warning if running in MTA.
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER AutoQuery
+        When specified, automatically sends new clipboard text to Perplexity.
+        Off by default to prevent unintended API calls.
+    .PARAMETER MinLength
+        Minimum clipboard text length required to trigger processing. Default: 10.
+    .PARAMETER MaxLength
+        Maximum clipboard text length to process (longer text is truncated). Default: 5000.
+    .PARAMETER Model
+        The Perplexity model to use for auto queries. Default: sonar.
+    .PARAMETER Notify
+        When specified, shows a toast notification with query results via Send-XPCNotification.
+    .PARAMETER IntervalMs
+        Clipboard poll interval in milliseconds. Default: 1000.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Watch-XPCClipboard
+
+        Monitors clipboard and prints a message when new text is detected.
+    .EXAMPLE
+        Watch-XPCClipboard -AutoQuery -Notify
+
+        Automatically queries Perplexity on new clipboard text and shows toast notifications.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [switch]$AutoQuery,
+
+        [Parameter()]
+        [int]$MinLength = 10,
+
+        [Parameter()]
+        [int]$MaxLength = 5000,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar',
+
+        [Parameter()]
+        [switch]$Notify,
+
+        [Parameter()]
+        [int]$IntervalMs = 1000,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    # STA check
+    $apartment = [System.Threading.Thread]::CurrentThread.GetApartmentState()
+    if ($apartment -ne [System.Threading.ApartmentState]::STA) {
+        Write-Warning 'Clipboard access requires STA threading. Start PowerShell with -STA flag if clipboard reads fail.'
+    }
+
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "System.Windows.Forms assembly failed to load: $($_.Exception.Message)"
+        return
+    }
+
+    $lastText = [System.Windows.Forms.Clipboard]::GetText()
+    Write-Host 'Watching clipboard. Press Ctrl+C to stop.' -ForegroundColor Cyan
+
+    while ($true) {
+        Start-Sleep -Milliseconds $IntervalMs
+
+        $currentText = ''
+        try {
+            $currentText = [System.Windows.Forms.Clipboard]::GetText()
+        }
+        catch {
+            Write-Verbose "Clipboard read error: $($_.Exception.Message)"
+            continue
+        }
+
+        if ($currentText -ne $lastText -and $currentText.Length -ge $MinLength) {
+            $lastText = $currentText
+
+            $processText = $currentText
+            if ($processText.Length -gt $MaxLength) {
+                $processText = $processText.Substring(0, $MaxLength)
+                Write-Verbose "Clipboard text truncated to $MaxLength characters."
+            }
+
+            if ($AutoQuery) {
+                Write-Host "[Clipboard] New text detected ($($processText.Length) chars) - querying Perplexity..." -ForegroundColor Yellow
+                $result = Invoke-Perplexity -Query $processText -Model $Model -Port $Port
+                Write-Host $result
+                if ($Notify) {
+                    $bodySnippet = if ($result.Length -gt 200) { $result.Substring(0, 200) + '...' } else { $result }
+                    Send-XPCNotification -Title 'Perplexity Clipboard Result' -Body $bodySnippet
+                }
+            }
+            else {
+                Write-Host "[Clipboard] New text detected ($($processText.Length) chars). Run Invoke-PerplexityClipboard to query." -ForegroundColor Yellow
+            }
+        }
+    }
+}
+
+function Invoke-PerplexityClipboard {
+    <#
+    .SYNOPSIS
+        Reads the current clipboard contents and sends them to Perplexity.
+    .DESCRIPTION
+        One-shot clipboard query: retrieves the current text from the Windows clipboard,
+        prepends a configurable prompt prefix, and sends the combined text to the
+        Perplexity Sonar API via Invoke-Perplexity.
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+    .PARAMETER Prompt
+        The prompt prefix to prepend before the clipboard text.
+        Default: "Explain the following".
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar.
+    .PARAMETER Raw
+        When specified, passes -Raw to Invoke-Perplexity for unformatted output.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityClipboard
+
+        Reads the clipboard and asks Perplexity to explain it.
+    .EXAMPLE
+        Invoke-PerplexityClipboard -Prompt "Debug this error message"
+
+        Asks Perplexity to debug the error message currently in the clipboard.
+    .EXAMPLE
+        Invoke-PerplexityClipboard -Prompt "Translate to PowerShell" -Model sonar-pro
+
+        Translates the clipboard text to PowerShell using the sonar-pro model.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$Prompt = 'Explain the following',
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar',
+
+        [Parameter()]
+        [switch]$Raw,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "System.Windows.Forms assembly failed to load: $($_.Exception.Message)"
+        return
+    }
+
+    $clipText = [System.Windows.Forms.Clipboard]::GetText()
+
+    if ([string]::IsNullOrWhiteSpace($clipText)) {
+        Write-Warning 'Clipboard is empty or contains no text.'
+        return
+    }
+
+    Write-Verbose "Clipboard text length: $($clipText.Length) characters."
+
+    $query = ('{0}:{1}{1}{2}' -f $Prompt, [System.Environment]::NewLine, $clipText)
+
+    if ($Raw) {
+        Invoke-Perplexity -Query $query -Model $Model -Port $Port -Raw
+    }
+    else {
+        Invoke-Perplexity -Query $query -Model $Model -Port $Port
+    }
 }
 
 #endregion

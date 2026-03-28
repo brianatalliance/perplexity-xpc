@@ -1,0 +1,79 @@
+// PerplexityXPC - VS Code Settings Fragment
+// ==========================================
+// HOW TO APPLY:
+//
+// SETTINGS (settings.json):
+//   1. Press Ctrl+, to open Settings
+//   2. Click the "{}" icon (top-right) to open Settings JSON
+//   3. Merge the object below into your existing settings.json
+//
+// KEYBINDINGS (keybindings.json):
+//   1. Press Ctrl+K then Ctrl+S to open Keyboard Shortcuts
+//   2. Click the "{}" icon (top-right) to open Keyboard Shortcuts JSON
+//   3. Add the keybinding entries from the second section below into the array
+//
+// NOTE: The "when" clause "terminalFocus" ensures these shortcuts only fire
+// when a terminal panel is active, avoiding conflicts with editor shortcuts.
+
+// ---------------------------------------------------------------------------
+// SECTION 1: settings.json additions
+// ---------------------------------------------------------------------------
+{
+    // PerplexityXPC integration via Tasks
+    // The PERPLEXITY_API_KEY env var is injected into every integrated terminal.
+    // Leave blank if you set the variable at the system or user environment level.
+    "terminal.integrated.env.windows": {
+        "PERPLEXITY_API_KEY": "" // Set your API key here if not using system env
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SECTION 2: keybindings.json additions
+// ---------------------------------------------------------------------------
+// Add these entries inside the top-level array in keybindings.json.
+// All shortcuts use Ctrl+Shift+Alt as a prefix to avoid conflicts.
+//
+// Shortcut summary:
+//   Ctrl+Shift+Alt+P  - Query clipboard content with Perplexity
+//   Ctrl+Shift+Alt+R  - Code review for the open file
+//   Ctrl+Shift+Alt+D  - Debug assistance for the open file
+//   Ctrl+Shift+Alt+S  - Security audit for the open file
+[
+    {
+        // Send the clipboard contents to Perplexity for analysis
+        "key": "ctrl+shift+alt+p",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "Invoke-PerplexityClipboard\n"
+        },
+        "when": "terminalFocus"
+    },
+    {
+        // Request a general code review of the currently open file
+        // ${file} is a VS Code variable that expands to the full path of the active file
+        "key": "ctrl+shift+alt+r",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "Invoke-PerplexityCodeReview -Path '${file}' -Focus review\n"
+        },
+        "when": "terminalFocus"
+    },
+    {
+        // Request debug assistance for the currently open file
+        "key": "ctrl+shift+alt+d",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "Invoke-PerplexityCodeReview -Path '${file}' -Focus debug\n"
+        },
+        "when": "terminalFocus"
+    },
+    {
+        // Request a security audit for the currently open file
+        "key": "ctrl+shift+alt+s",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "Invoke-PerplexityCodeReview -Path '${file}' -Focus security\n"
+        },
+        "when": "terminalFocus"
+    }
+]

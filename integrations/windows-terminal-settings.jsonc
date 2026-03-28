@@ -1,0 +1,88 @@
+// PerplexityXPC - Windows Terminal Settings Fragment
+// ===================================================
+// How to apply these settings:
+//   1. Open Windows Terminal
+//   2. Press Ctrl+, to open Settings
+//   3. Click "Open JSON file" (bottom-left corner)
+//   4. Merge the sections below into your settings.json
+//
+// NOTE: Do not paste this entire file as-is. Merge each section
+// into the corresponding section of your existing settings.json.
+// If a section (e.g. "actions") does not exist, add it at the top level.
+
+{
+    // ---------------------------------------------------------------------------
+    // SECTION 1: Profile
+    // ---------------------------------------------------------------------------
+    // Add the entry below inside the "profiles" > "list" array in settings.json.
+    // Example location in settings.json:
+    //   "profiles": {
+    //       "list": [
+    //           <-- add here
+    //       ]
+    //   }
+    "profiles": {
+        "list": [
+            {
+                // Display name shown in the dropdown menu
+                "name": "PerplexityXPC Shell",
+
+                // Launch PowerShell, import the module, and show a welcome message
+                "commandline": "powershell.exe -NoExit -Command \"Import-Module PerplexityXPC; Write-Host 'PerplexityXPC loaded. Type pplx <query> to search.' -ForegroundColor Cyan\"",
+
+                // Uses the built-in PowerShell icon (blue PS logo)
+                "icon": "ms-appx:///ProfileIcons/{574e775e-4f2a-5b96-ac1e-a2962a402336}.png",
+
+                // Color scheme - One Half Dark is bundled with Windows Terminal
+                // Alternatives: "Campbell", "Solarized Dark", "Tango Dark"
+                "colorScheme": "One Half Dark",
+
+                // Font settings - Cascadia Code is included with Windows Terminal
+                // and supports ligatures. Fall back to "Consolas" if not available.
+                "font": {
+                    "face": "Cascadia Code",
+                    "size": 11
+                },
+
+                // Start in the user home directory
+                "startingDirectory": "%USERPROFILE%",
+
+                // Label shown on the tab
+                "tabTitle": "Perplexity",
+
+                // Set to true to hide from the dropdown (useful if you only use keybindings)
+                "hidden": false
+            }
+        ]
+    },
+
+    // ---------------------------------------------------------------------------
+    // SECTION 2: Keybindings (actions)
+    // ---------------------------------------------------------------------------
+    // Add the entries below inside the "actions" array in settings.json.
+    // If "actions" does not exist yet, add it as a top-level key.
+    //
+    // WARNING: ctrl+shift+alt+s conflicts with the default "Find" action in some
+    // terminal versions. If it does not work, change the key to something else,
+    // e.g. "ctrl+shift+alt+x".
+    "actions": [
+        {
+            // Sends the clipboard query command to the active terminal pane
+            "command": {
+                "action": "sendInput",
+                "input": "Invoke-PerplexityClipboard\r"
+            },
+            "keys": "ctrl+shift+alt+p",
+            "name": "Query clipboard with Perplexity"
+        },
+        {
+            // Shows the XPC broker status
+            "command": {
+                "action": "sendInput",
+                "input": "Get-XPCStatus\r"
+            },
+            "keys": "ctrl+shift+alt+s",
+            "name": "PerplexityXPC Status"
+        }
+    ]
+}

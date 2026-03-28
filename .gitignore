@@ -27,5 +27,11 @@ api-key.enc
 .idea/
 .vscode/
 
-## Marker files
+## Marker files (build artifacts - do not commit)
+MODULE_DONE.md
+SERVICE_DONE.md
+TRAY_DONE.md
+INSTALLER_DONE.md
+SKILL2_DONE.md
+DOCS_DONE.md
 *_DONE.md

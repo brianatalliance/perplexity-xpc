@@ -1,0 +1,117 @@
+{
+    // VS Code Tasks for PerplexityXPC
+    // =================================
+    // HOW TO APPLY:
+    //   Option A - Per-workspace (recommended):
+    //     Copy this file to <your-project>/.vscode/tasks.json
+    //     Tasks will appear under Terminal > Run Task for that project.
+    //
+    //   Option B - Global user tasks:
+    //     Open the Command Palette (Ctrl+Shift+P)
+    //     Run: "Tasks: Open User Tasks"
+    //     Merge the "tasks" array below into the existing tasks.json
+    //
+    // USAGE:
+    //   Terminal > Run Task (Ctrl+Shift+P > "Run Task") then pick a Perplexity task.
+    //   The ${file} variable expands to the full path of the currently active file.
+    //
+    // REQUIREMENTS:
+    //   The PerplexityXPC module must be imported in the terminal session.
+    //   If using the integrated terminal, ensure your PowerShell profile loads it,
+    //   or add "Import-Module PerplexityXPC;" as a prefix to each command.
+
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // General code review - reads the file and returns review comments
+            "label": "Perplexity: Review Current File",
+            "type": "shell",
+            "command": "Invoke-PerplexityCodeReview -Path '${file}' -Focus review",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Security audit - checks for vulnerabilities, secrets, bad patterns
+            "label": "Perplexity: Security Audit Current File",
+            "type": "shell",
+            "command": "Invoke-PerplexityCodeReview -Path '${file}' -Focus security",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Debug assistance - identifies potential bugs and logic issues
+            "label": "Perplexity: Debug Current File",
+            "type": "shell",
+            "command": "Invoke-PerplexityCodeReview -Path '${file}' -Focus debug",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Plain-language explanation of what the file does
+            "label": "Perplexity: Explain Current File",
+            "type": "shell",
+            "command": "Invoke-PerplexityCodeReview -Path '${file}' -Focus explain",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Fetch and analyze recent Windows Event Log entries
+            "label": "Perplexity: Analyze Event Logs",
+            "type": "shell",
+            "command": "Invoke-PerplexityEventAnalysis -GroupBySource",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Show the XPC broker connection and configuration status
+            "label": "Perplexity: XPC Broker Status",
+            "type": "shell",
+            "command": "Get-XPCStatus",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            // Send current clipboard content to Perplexity
+            "label": "Perplexity: Query Clipboard",
+            "type": "shell",
+            "command": "Invoke-PerplexityClipboard",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        }
+    ]
+}
