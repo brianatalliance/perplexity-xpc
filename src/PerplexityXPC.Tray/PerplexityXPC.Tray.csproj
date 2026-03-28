@@ -28,8 +28,7 @@
     <!-- DPI-aware manifest -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
 
-    <!-- Embed resources -->
-    <ApplicationIcon>Resources\tray_icon.ico</ApplicationIcon>
+    <!-- Embed resources (icon generated at runtime) -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,7 +48,7 @@
 
   <ItemGroup>
     <!-- Windows Service Controller (ServiceController.Start / Stop) -->
-    <FrameworkReference Include="Microsoft.Windows.Compatibility" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

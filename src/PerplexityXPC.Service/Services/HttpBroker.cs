@@ -58,8 +58,7 @@ public static class HttpBroker
                     statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
             }
         })
-        .WithName("PerplexityChat")
-        .WithOpenApi();
+        .WithName("PerplexityChat");
 
         /// <summary>
         /// Proxy a streaming chat request to Perplexity and forward as Server-Sent Events (SSE).
@@ -98,8 +97,7 @@ public static class HttpBroker
                 await ctx.Response.WriteAsync(errorLine, Encoding.UTF8, ct);
             }
         })
-        .WithName("PerplexityChatStream")
-        .WithOpenApi();
+        .WithName("PerplexityChatStream");
 
         // -----------------------------------------------------------------------
         // MCP proxy endpoints
@@ -139,8 +137,7 @@ public static class HttpBroker
                     extensions: new Dictionary<string, object?> { ["code"] = ex.Code });
             }
         })
-        .WithName("McpProxy")
-        .WithOpenApi();
+        .WithName("McpProxy");
 
         /// <summary>List all configured MCP servers and their current runtime status.</summary>
         app.MapGet("/mcp/servers", async (
@@ -150,8 +147,7 @@ public static class HttpBroker
             var servers = await mcpManager.ListServersAsync();
             return Results.Ok(servers);
         })
-        .WithName("McpListServers")
-        .WithOpenApi();
+        .WithName("McpListServers");
 
         /// <summary>Restart a specific MCP server by name.</summary>
         app.MapPost("/mcp/servers/{name}/restart", async (
@@ -173,8 +169,7 @@ public static class HttpBroker
                 return Results.Problem(title: "Restart Failed", detail: ex.Message, statusCode: 500);
             }
         })
-        .WithName("McpRestartServer")
-        .WithOpenApi();
+        .WithName("McpRestartServer");
 
         // -----------------------------------------------------------------------
         // Service status and configuration
@@ -197,8 +192,7 @@ public static class HttpBroker
                 mcp_servers = servers
             });
         })
-        .WithName("ServiceStatus")
-        .WithOpenApi();
+        .WithName("ServiceStatus");
 
         /// <summary>Return non-sensitive configuration values.</summary>
         app.MapGet("/config", (
@@ -218,8 +212,7 @@ public static class HttpBroker
                 perplexity_api_base_url = config.PerplexityApiBaseUrl
             });
         })
-        .WithName("GetConfig")
-        .WithOpenApi();
+        .WithName("GetConfig");
 
         /// <summary>
         /// Update mutable configuration values at runtime.
@@ -251,8 +244,7 @@ public static class HttpBroker
                 note = "Port and pipe name changes require a service restart."
             });
         })
-        .WithName("UpdateConfig")
-        .WithOpenApi();
+        .WithName("UpdateConfig");
 
         // -----------------------------------------------------------------------
         // WebSocket endpoint for streaming
@@ -287,8 +279,7 @@ public static class HttpBroker
                 logger.LogWarning(ex, "WebSocket session ended with error.");
             }
         })
-        .WithName("WebSocketStream")
-        .WithOpenApi();
+        .WithName("WebSocketStream");
     }
 
     /// <summary>
