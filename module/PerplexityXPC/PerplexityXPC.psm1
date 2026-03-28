@@ -4310,3 +4310,311 @@ function Invoke-PerplexityADAnalysis {
 }
 
 #endregion
+
+#region Module Aliases
+
+Set-Alias -Name pplx      -Value Invoke-Perplexity          -Scope Global
+Set-Alias -Name pplxcode  -Value Invoke-PerplexityCodeReview -Scope Global
+Set-Alias -Name pplxnet   -Value Invoke-PerplexityNetDiag    -Scope Global
+Set-Alias -Name pplxevt   -Value Invoke-PerplexityEventAnalysis -Scope Global
+Set-Alias -Name pplxclip  -Value Invoke-PerplexityClipboard  -Scope Global
+Set-Alias -Name pplxhelp  -Value Show-XPCHelp               -Scope Global
+Set-Alias -Name xpc       -Value Invoke-XPC                 -Scope Global
+
+#endregion
+
+#region Help System
+
+function Show-XPCHelp {
+    <#
+    .SYNOPSIS
+        Displays PerplexityXPC module help and command reference.
+    .DESCRIPTION
+        Shows a categorized quick-reference of all PerplexityXPC commands, aliases,
+        and usage examples. Use -Command to get detailed help for a specific function,
+        -Category to filter by category, or -Examples to see usage examples for all commands.
+    .PARAMETER Command
+        Show detailed help for a specific command. Supports partial matching.
+    .PARAMETER Category
+        Filter commands by category.
+        Valid values: core, mcp, files, batch, it, office, windows, remote, clipboard, all
+    .PARAMETER Examples
+        Show usage examples for every command in the specified category (or all).
+    .PARAMETER Aliases
+        Show the alias quick-reference table.
+    .PARAMETER Full
+        Show the complete help output including all categories and examples.
+    .EXAMPLE
+        Show-XPCHelp
+        Displays the main help overview with all categories.
+    .EXAMPLE
+        Show-XPCHelp -Command Invoke-Perplexity
+        Shows detailed help for the Invoke-Perplexity function.
+    .EXAMPLE
+        Show-XPCHelp -Category office
+        Shows only Office integration commands.
+    .EXAMPLE
+        Show-XPCHelp -Aliases
+        Shows the alias quick-reference table.
+    .EXAMPLE
+        pplxhelp -Examples
+        Shows examples for all commands.
+    .EXAMPLE
+        xpc -h
+        Shows the main help overview (alias).
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Overview')]
+    param(
+        [Parameter(Position = 0, ParameterSetName = 'Command')]
+        [string]$Command,
+
+        [Parameter(ParameterSetName = 'Category')]
+        [ValidateSet('core', 'mcp', 'files', 'batch', 'it', 'office', 'windows', 'remote', 'clipboard', 'all')]
+        [string]$Category = 'all',
+
+        [Parameter(ParameterSetName = 'Examples')]
+        [switch]$Examples,
+
+        [Parameter(ParameterSetName = 'Aliases')]
+        [switch]$Aliases,
+
+        [Parameter(ParameterSetName = 'Full')]
+        [switch]$Full
+    )
+
+    $ver = '1.3.0'
+
+    # If a specific command was requested, delegate to Get-Help
+    if ($PSCmdlet.ParameterSetName -eq 'Command' -and $Command) {
+        # Try exact match first, then partial
+        $match = Get-Command -Module PerplexityXPC -Name $Command -ErrorAction SilentlyContinue
+        if (-not $match) {
+            $match = Get-Command -Module PerplexityXPC -Name "*${Command}*" -ErrorAction SilentlyContinue
+        }
+        if ($match) {
+            if ($match.Count -gt 1) {
+                Write-Host ''
+                Write-Host "  Multiple matches for '${Command}':" -ForegroundColor Yellow
+                Write-Host ''
+                foreach ($m in $match) {
+                    Write-Host ('    {0}' -f $m.Name) -ForegroundColor Cyan
+                }
+                Write-Host ''
+                Write-Host '  Use the full name for detailed help.' -ForegroundColor DarkGray
+            } else {
+                Get-Help $match.Name -Detailed
+            }
+        } else {
+            Write-Warning "No command matching '${Command}' found in PerplexityXPC module."
+            Write-Host '  Run Show-XPCHelp to see all available commands.' -ForegroundColor DarkGray
+        }
+        return
+    }
+
+    # Alias table
+    if ($Aliases -or $Full) {
+        Write-Host ''
+        Write-Host '  PerplexityXPC Aliases' -ForegroundColor Magenta
+        Write-Host '  =====================' -ForegroundColor Magenta
+        Write-Host ''
+        Write-Host ('    {0,-12} {1}' -f 'Alias', 'Command') -ForegroundColor White
+        Write-Host ('    {0,-12} {1}' -f '-----', '-------') -ForegroundColor DarkGray
+        Write-Host ('    {0,-12} {1}' -f 'pplx', 'Invoke-Perplexity') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxcode', 'Invoke-PerplexityCodeReview') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxnet', 'Invoke-PerplexityNetDiag') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxevt', 'Invoke-PerplexityEventAnalysis') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxclip', 'Invoke-PerplexityClipboard') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxerr', 'Ask-LastError') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxhelp', 'Show-XPCHelp') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'xpc', 'Show-XPCHelp') -ForegroundColor Cyan
+        Write-Host ''
+        if ($Aliases -and -not $Full) { return }
+    }
+
+    # Category definitions
+    $categories = [ordered]@{
+        core = @{
+            Title = 'Core'
+            Color = 'Green'
+            Commands = @(
+                @{ Name = 'Invoke-Perplexity';   Desc = 'Query Perplexity AI (alias: pplx)';       Ex = 'pplx "What is VLAN trunking?"' }
+                @{ Name = 'Get-XPCStatus';       Desc = 'Broker health and uptime';                Ex = 'Get-XPCStatus' }
+                @{ Name = 'Get-XPCConfig';       Desc = 'View broker configuration';               Ex = 'Get-XPCConfig' }
+                @{ Name = 'Set-XPCConfig';       Desc = 'Update broker configuration';             Ex = 'Set-XPCConfig -Settings @{log_level="Debug"}' }
+                @{ Name = 'Show-XPCHelp';        Desc = 'This help system (alias: xpc, pplxhelp)'; Ex = 'xpc -h' }
+            )
+        }
+        mcp = @{
+            Title = 'MCP Servers'
+            Color = 'DarkCyan'
+            Commands = @(
+                @{ Name = 'Get-McpServer';       Desc = 'List MCP servers and status';             Ex = 'Get-McpServer' }
+                @{ Name = 'Restart-McpServer';   Desc = 'Restart an MCP server';                   Ex = 'Restart-McpServer -Name filesystem' }
+                @{ Name = 'Invoke-McpRequest';   Desc = 'Send JSON-RPC to an MCP server';          Ex = 'Invoke-McpRequest -Server filesystem -Method "tools/list"' }
+            )
+        }
+        files = @{
+            Title = 'File Analysis'
+            Color = 'Yellow'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityFileAnalysis';   Desc = 'Analyze a file through Perplexity';     Ex = 'Invoke-PerplexityFileAnalysis -Path .\script.ps1' }
+                @{ Name = 'Invoke-PerplexityFolderAnalysis'; Desc = 'Analyze a folder structure';            Ex = 'Invoke-PerplexityFolderAnalysis -Path C:\Projects' }
+                @{ Name = 'Invoke-PerplexityCodeReview';    Desc = 'Code review/debug/security (alias: pplxcode)'; Ex = 'pplxcode -Path .\script.ps1 -Focus security' }
+            )
+        }
+        batch = @{
+            Title = 'Batch & Research'
+            Color = 'Blue'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityBatch';   Desc = 'Run multiple queries with CSV/JSON export'; Ex = 'Invoke-PerplexityBatch -Queries @("Q1","Q2") -OutputPath results.csv' }
+                @{ Name = 'Invoke-PerplexityReport';  Desc = 'Generate a research report';                Ex = 'Invoke-PerplexityReport -Topic "Zero Trust" -OutputPath report.md' }
+            )
+        }
+        it = @{
+            Title = 'IT Integration (Atera/Intune)'
+            Color = 'Red'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityTicketAnalysis';   Desc = 'Analyze Atera support tickets';         Ex = '$ticket | Invoke-PerplexityTicketAnalysis -IncludeResolution' }
+                @{ Name = 'Invoke-PerplexityDeviceAnalysis';   Desc = 'Analyze Intune device compliance';      Ex = '$device | Invoke-PerplexityDeviceAnalysis -Focus security' }
+                @{ Name = 'Invoke-PerplexitySecurityAnalysis'; Desc = 'Analyze security findings/vulns';       Ex = 'Invoke-PerplexitySecurityAnalysis -Finding "NTLM relay"' }
+            )
+        }
+        office = @{
+            Title = 'Office Integration'
+            Color = 'DarkYellow'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityEmailAnalysis';  Desc = 'Analyze Outlook email (5 modes)';       Ex = 'Invoke-PerplexityEmailAnalysis -FromOutlook -Focus reply' }
+                @{ Name = 'Invoke-PerplexityEmailDraft';     Desc = 'Draft email with AI, create in Outlook'; Ex = 'Invoke-PerplexityEmailDraft -Prompt "Follow up on project" -CreateInOutlook' }
+                @{ Name = 'Invoke-PerplexityDocumentReview'; Desc = 'Review Word document (5 modes)';        Ex = 'Invoke-PerplexityDocumentReview -FromWord -Focus compliance' }
+                @{ Name = 'Invoke-PerplexityResearchInsert'; Desc = 'Research and insert into Word';          Ex = 'Invoke-PerplexityResearchInsert -Query "802.1X best practices" -InsertInWord' }
+                @{ Name = 'Invoke-PerplexityExcelAnalysis';  Desc = 'Analyze Excel data (5 modes)';          Ex = 'Invoke-PerplexityExcelAnalysis -FromExcel -Focus anomalies' }
+                @{ Name = 'Invoke-PerplexityVBAGenerator';   Desc = 'Generate VBA macros from description';  Ex = 'Invoke-PerplexityVBAGenerator -Description "Highlight cells > 1000"' }
+                @{ Name = 'Invoke-PerplexityTeamsAnalysis';  Desc = 'Analyze Teams chat (5 modes)';          Ex = 'Get-Clipboard | Invoke-PerplexityTeamsAnalysis -Focus action-items' }
+            )
+        }
+        windows = @{
+            Title = 'Windows Native'
+            Color = 'White'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityEventAnalysis';  Desc = 'Analyze Windows Event Logs (alias: pplxevt)'; Ex = 'pplxevt -GroupBySource' }
+                @{ Name = 'Invoke-PerplexityNetDiag';       Desc = 'Network diagnostics (alias: pplxnet)';        Ex = 'pplxnet 8.8.8.8' }
+                @{ Name = 'Invoke-PerplexityServerAnalysis'; Desc = 'Server health/AD/DNS/DHCP/certs (8 modes)';  Ex = 'Invoke-PerplexityServerAnalysis -Component all' }
+                @{ Name = 'Invoke-PerplexityADAnalysis';    Desc = 'Active Directory deep analysis (7 modes)';    Ex = 'Invoke-PerplexityADAnalysis -Focus security' }
+                @{ Name = 'Invoke-PerplexityRDPAnalysis';   Desc = 'RDP session and connection diagnostics';      Ex = 'Invoke-PerplexityRDPAnalysis -AnalyzeActive' }
+                @{ Name = 'Register-XPCScheduledTask';      Desc = 'Create scheduled Perplexity tasks';           Ex = 'Register-XPCScheduledTask -TaskName "Daily Briefing" -Command "pplxevt" -Trigger daily' }
+                @{ Name = 'Get-XPCScheduledTask';           Desc = 'List scheduled tasks';                        Ex = 'Get-XPCScheduledTask' }
+                @{ Name = 'Remove-XPCScheduledTask';        Desc = 'Remove a scheduled task';                     Ex = 'Remove-XPCScheduledTask -TaskName "Daily Briefing"' }
+                @{ Name = 'Register-XPCSearchProvider';     Desc = 'Register perplexity:// URI handler';          Ex = 'Register-XPCSearchProvider' }
+                @{ Name = 'Invoke-PerplexitySearch';        Desc = 'Quick search with popup option';              Ex = 'Invoke-PerplexitySearch "OSPF areas" -Popup' }
+            )
+        }
+        clipboard = @{
+            Title = 'Clipboard & Notifications'
+            Color = 'Magenta'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityClipboard'; Desc = 'Query clipboard contents (alias: pplxclip)'; Ex = 'pplxclip -Prompt "Debug this error"' }
+                @{ Name = 'Watch-XPCClipboard';         Desc = 'Monitor clipboard for auto-query';           Ex = 'Watch-XPCClipboard -AutoQuery -Notify' }
+                @{ Name = 'Send-XPCNotification';       Desc = 'Send Windows toast notification';            Ex = 'Send-XPCNotification -Title "Done" -Body "Analysis complete"' }
+            )
+        }
+    }
+
+    # Filter by category if specified
+    if ($Category -ne 'all' -and -not $Full) {
+        if ($categories.Contains($Category)) {
+            $filtered = [ordered]@{}
+            $filtered[$Category] = $categories[$Category]
+            $categories = $filtered
+        }
+    }
+
+    # Header
+    Write-Host ''
+    Write-Host '  ============================================' -ForegroundColor Magenta
+    Write-Host "  PerplexityXPC v${ver} - Command Reference" -ForegroundColor Magenta
+    Write-Host '  ============================================' -ForegroundColor Magenta
+    Write-Host ''
+    Write-Host '  Broker: http://127.0.0.1:47777  |  Remote: :47778' -ForegroundColor DarkGray
+    Write-Host ''
+
+    # Print categories
+    foreach ($key in $categories.Keys) {
+        $cat = $categories[$key]
+        Write-Host ('  [{0}]' -f $cat.Title) -ForegroundColor $cat.Color
+        Write-Host ''
+
+        foreach ($cmd in $cat.Commands) {
+            Write-Host ('    {0,-42} {1}' -f $cmd.Name, $cmd.Desc) -ForegroundColor Cyan
+            if ($Examples -or $Full) {
+                Write-Host ('      > {0}' -f $cmd.Ex) -ForegroundColor DarkGray
+            }
+        }
+        Write-Host ''
+    }
+
+    # Footer
+    Write-Host '  Quick Tips:' -ForegroundColor Yellow
+    Write-Host '    Show-XPCHelp -Command <name>     Detailed help for a command' -ForegroundColor DarkGray
+    Write-Host '    Show-XPCHelp -Category office     Show only Office commands' -ForegroundColor DarkGray
+    Write-Host '    Show-XPCHelp -Examples            Show all with examples' -ForegroundColor DarkGray
+    Write-Host '    Show-XPCHelp -Aliases             Show alias table' -ForegroundColor DarkGray
+    Write-Host '    Get-Help <command> -Full           PowerShell native help' -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host ('  {0} commands  |  {1} categories  |  github.com/brianatalliance/perplexity-xpc' -f (Get-Command -Module PerplexityXPC).Count, $categories.Count) -ForegroundColor DarkGray
+    Write-Host ''
+}
+
+# Wrapper function so "xpc -h" works naturally
+function Invoke-XPC {
+    <#
+    .SYNOPSIS
+        Main entry point for PerplexityXPC. Use "xpc -h" for help or "xpc <query>" to search.
+    .DESCRIPTION
+        Convenience wrapper that routes to Show-XPCHelp for help flags or Invoke-Perplexity
+        for queries. Designed to feel like a CLI tool with -h support.
+    .PARAMETER Query
+        A query string to send to Perplexity, or a help flag (-h, --help, help, ?).
+    .PARAMETER h
+        Show help.
+    .EXAMPLE
+        xpc -h
+        Shows the help overview.
+    .EXAMPLE
+        xpc "What is OSPF?"
+        Queries Perplexity.
+    .EXAMPLE
+        xpc -h -Category office
+        Shows Office integration commands.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+        [string[]]$Query,
+
+        [Alias('help')]
+        [switch]$h
+    )
+
+    if ($h) {
+        Show-XPCHelp
+        return
+    }
+
+    if (-not $Query -or $Query.Count -eq 0) {
+        Show-XPCHelp
+        return
+    }
+
+    $joined = $Query -join ' '
+
+    # Check for help-like arguments
+    if ($joined -match '^(-h|--help|help|\?)$') {
+        Show-XPCHelp
+        return
+    }
+
+    # Otherwise, treat as a Perplexity query
+    Invoke-Perplexity -Query $joined
+}
+
+#endregion

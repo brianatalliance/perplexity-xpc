@@ -11,7 +11,7 @@
 RootModule = 'PerplexityXPC.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0'
+ModuleVersion = '1.3.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -103,7 +103,9 @@ FunctionsToExport = @(
     'Invoke-PerplexitySearch',
     'Invoke-PerplexityRDPAnalysis',
     'Invoke-PerplexityServerAnalysis',
-    'Invoke-PerplexityADAnalysis'
+    'Invoke-PerplexityADAnalysis',
+    'Show-XPCHelp',
+    'Invoke-XPC'
 )
 
 # Cmdlets to export from this module
@@ -113,7 +115,7 @@ CmdletsToExport = @()
 VariablesToExport = @()
 
 # Aliases to export from this module
-AliasesToExport = @()
+AliasesToExport = @('pplx', 'pplxcode', 'pplxnet', 'pplxevt', 'pplxclip', 'pplxhelp', 'xpc')
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
