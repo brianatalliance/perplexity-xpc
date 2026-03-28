@@ -185,7 +185,7 @@ public static class HttpBroker
 
             return Results.Ok(new
             {
-                version = "1.0.0",
+                version = "1.2.0",
                 status = "ok",
                 uptime = FormatUptime(uptime),
                 started_at = ServiceStartTime,

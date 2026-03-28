@@ -8,7 +8,7 @@
     <RootNamespace>PerplexityXPC.ContextMenu</RootNamespace>
 
     <!-- Metadata -->
-    <Version>1.0.0</Version>
+    <Version>1.2.0</Version>
     <Company>PerplexityXPC</Company>
     <Product>PerplexityXPC Context Menu Handler</Product>
     <Description>Windows Explorer context menu handler for PerplexityXPC — reads file/folder content and sends it to the local Perplexity broker service.</Description>

@@ -19,7 +19,7 @@
     <!-- Application metadata -->
     <AssemblyName>PerplexityXPC.Tray</AssemblyName>
     <RootNamespace>PerplexityXPC.Tray</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.2.0</Version>
     <Company>PerplexityXPC</Company>
     <Product>PerplexityXPC Tray</Product>
     <Description>System tray application for PerplexityXPC — quick access to Perplexity AI.</Description>
