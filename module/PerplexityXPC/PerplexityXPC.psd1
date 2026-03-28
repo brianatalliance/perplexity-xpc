@@ -88,7 +88,22 @@ FunctionsToExport = @(
     'Invoke-PerplexityCodeReview',
     'Send-XPCNotification',
     'Watch-XPCClipboard',
-    'Invoke-PerplexityClipboard'
+    'Invoke-PerplexityClipboard',
+    'Invoke-PerplexityEmailAnalysis',
+    'Invoke-PerplexityEmailDraft',
+    'Invoke-PerplexityDocumentReview',
+    'Invoke-PerplexityResearchInsert',
+    'Invoke-PerplexityExcelAnalysis',
+    'Invoke-PerplexityVBAGenerator',
+    'Invoke-PerplexityTeamsAnalysis',
+    'Register-XPCScheduledTask',
+    'Get-XPCScheduledTask',
+    'Remove-XPCScheduledTask',
+    'Register-XPCSearchProvider',
+    'Invoke-PerplexitySearch',
+    'Invoke-PerplexityRDPAnalysis',
+    'Invoke-PerplexityServerAnalysis',
+    'Invoke-PerplexityADAnalysis'
 )
 
 # Cmdlets to export from this module
