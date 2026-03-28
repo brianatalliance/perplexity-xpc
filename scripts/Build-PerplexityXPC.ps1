@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Builds all PerplexityXPC projects and assembles a ready-to-install bin\ folder.
 

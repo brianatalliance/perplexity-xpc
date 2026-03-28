@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Uninstalls PerplexityXPC — removes the service, context menus, firewall rule, and files.
+    Uninstalls PerplexityXPC - removes the service, context menus, firewall rule, and files.
 
 .DESCRIPTION
     Stops and removes the PerplexityXPC Windows Service, kills the tray application,
@@ -11,7 +11,7 @@
     Use -KeepData to preserve configuration, logs, and the encrypted API key.
 
 .PARAMETER KeepData
-    Preserve the data directory (%LOCALAPPDATA%\PerplexityXPC) — keeps config, logs,
+    Preserve the data directory (%LOCALAPPDATA%\PerplexityXPC) - keeps config, logs,
     and the encrypted API key.
 
 .PARAMETER InstallPath
@@ -74,7 +74,7 @@ function Test-IsAdmin {
 
 #region Self-elevation
 if (-not (Test-IsAdmin)) {
-    Write-Warn "Not running as Administrator — re-launching elevated..."
+    Write-Warn "Not running as Administrator - re-launching elevated..."
     $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
     if ($KeepData)   { $argList += '-KeepData' }
     if ($Quiet)      { $argList += '-Quiet' }
@@ -121,7 +121,7 @@ try {
         & sc.exe delete PerplexityXPC | Out-Null
         Write-Success "Windows Service 'PerplexityXPC' removed"
     } else {
-        Write-Status "  [SKIP] Service 'PerplexityXPC' not found — already removed or never installed." -Color DarkGray
+        Write-Status "  [SKIP] Service 'PerplexityXPC' not found - already removed or never installed." -Color DarkGray
     }
 } catch {
     Write-Warn "Error removing service: $_"
@@ -244,7 +244,7 @@ try {
                     Write-Status "  Waiting for file locks to release (attempt $i/$maxAttempts)..." -Color DarkGray
                     Start-Sleep -Seconds 3
                 } else {
-                    Write-Warn "Could not fully remove $InstallPath — some files may be locked."
+                    Write-Warn "Could not fully remove $InstallPath - some files may be locked."
                     Write-Warn "Delete manually after reboot: $InstallPath"
                 }
             }
