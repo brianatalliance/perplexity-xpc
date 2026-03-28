@@ -11,7 +11,7 @@ namespace PerplexityXPC.Service.Services;
 
 /// <summary>
 /// HTTP client wrapper for the Perplexity Sonar API.
-/// Supports both blocking and streaming chat completions with automatic retry logic.
+/// Supports blocking completions, streaming completions, and async (deep-research) jobs.
 /// </summary>
 public sealed class PerplexityApiClient : IDisposable
 {
@@ -228,6 +228,113 @@ public sealed class PerplexityApiClient : IDisposable
                 delay *= 2; // Exponential backoff
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Async job endpoints (used for sonar-deep-research)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Submits a request as an asynchronous job to the Perplexity async API.
+    /// Use this for sonar-deep-research which may take minutes to complete.
+    /// </summary>
+    /// <param name="request">The chat request payload. Model should be sonar-deep-research.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The initial job response containing the job ID and CREATED status.</returns>
+    /// <exception cref="HttpRequestException">Thrown when the API returns a non-success status.</exception>
+    public async Task<AsyncJobResponse> SubmitAsyncAsync(
+        ChatRequest request,
+        CancellationToken ct = default)
+    {
+        _logger.LogDebug(
+            "Submitting async job with model {Model}",
+            request.Model);
+
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var jsonContent = JsonContent.Create(request, options: JsonOptions);
+            using var response = await _httpClient.PostAsync("/v1/async/sonar", jsonContent, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning(
+                    "Async job submission failed {StatusCode}: {Body}",
+                    (int)response.StatusCode, errorBody);
+                response.EnsureSuccessStatusCode();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<AsyncJobResponse>(JsonOptions, ct);
+            return result ?? throw new InvalidOperationException(
+                "Received null response from async job submission.");
+        }, ct);
+    }
+
+    /// <summary>
+    /// Lists all async jobs for the current API key.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of job summaries ordered by creation time descending.</returns>
+    public async Task<List<AsyncJobSummary>> ListAsyncJobsAsync(
+        CancellationToken ct = default)
+    {
+        _logger.LogDebug("Listing async jobs.");
+
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var response = await _httpClient.GetAsync("/v1/async/sonar", ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning(
+                    "List async jobs failed {StatusCode}: {Body}",
+                    (int)response.StatusCode, errorBody);
+                response.EnsureSuccessStatusCode();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<List<AsyncJobSummary>>(JsonOptions, ct);
+            return result ?? [];
+        }, ct);
+    }
+
+    /// <summary>
+    /// Retrieves the current status and (when complete) result of an async job.
+    /// </summary>
+    /// <param name="id">The job ID returned by <see cref="SubmitAsyncAsync"/>.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>
+    /// The full job response. Check the <c>Status</c> field:
+    /// CREATED, IN_PROGRESS, COMPLETED, or FAILED.
+    /// The <c>Response</c> property is populated only when status is COMPLETED.
+    /// </returns>
+    public async Task<AsyncJobResponse> GetAsyncJobAsync(
+        string id,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Job ID must be specified.", nameof(id));
+
+        _logger.LogDebug("Polling async job {JobId}.", id);
+
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var response = await _httpClient.GetAsync(
+                $"/v1/async/sonar/{id}", ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning(
+                    "Get async job {JobId} failed {StatusCode}: {Body}",
+                    id, (int)response.StatusCode, errorBody);
+                response.EnsureSuccessStatusCode();
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<AsyncJobResponse>(JsonOptions, ct);
+            return result ?? throw new InvalidOperationException(
+                $"Received null response when fetching job {id}.");
+        }, ct);
     }
 
     /// <inheritdoc/>

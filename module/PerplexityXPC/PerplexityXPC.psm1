@@ -56,8 +56,9 @@ function ConvertTo-XPCBody {
     .SYNOPSIS
         Builds the JSON request body for the /perplexity endpoint.
     .DESCRIPTION
-        Constructs a hashtable with all relevant parameters for a Perplexity Sonar
-        API request, then serializes it to JSON. Used internally by Invoke-Perplexity.
+        Constructs a hashtable with all Perplexity Sonar API parameters, then
+        serializes it to JSON. Used internally by Invoke-Perplexity and related
+        convenience wrappers.
     .PARAMETER Query
         The user question or prompt.
     .PARAMETER Model
@@ -65,15 +66,39 @@ function ConvertTo-XPCBody {
     .PARAMETER SystemPrompt
         Optional system-level instruction.
     .PARAMETER Temperature
-        Sampling temperature (0-2).
+        Sampling temperature (0-2). Pass -1 to omit.
     .PARAMETER MaxTokens
-        Maximum tokens in the response.
+        Maximum tokens in the response. Pass 0 to omit.
     .PARAMETER SearchMode
         Search scope: web, academic, or sec.
     .PARAMETER DomainFilter
         Array of domains to restrict search to.
     .PARAMETER RecencyFilter
         Recency constraint: hour, day, week, month, or year.
+    .PARAMETER ReturnImages
+        When true, request image results.
+    .PARAMETER ReturnRelatedQuestions
+        When true, request related questions.
+    .PARAMETER SearchAfterDateFilter
+        Only include results published after this date (MM/DD/YYYY).
+    .PARAMETER SearchBeforeDateFilter
+        Only include results published before this date (MM/DD/YYYY).
+    .PARAMETER LastUpdatedAfterFilter
+        Only include results last updated after this date (MM/DD/YYYY).
+    .PARAMETER LastUpdatedBeforeFilter
+        Only include results last updated before this date (MM/DD/YYYY).
+    .PARAMETER SearchLanguageFilter
+        Restrict results to content in these ISO 639-1 language codes.
+    .PARAMETER DisableSearch
+        When true, disables web search (model answers from training data only).
+    .PARAMETER ReasoningEffort
+        Reasoning effort for sonar-reasoning-pro: minimal, low, medium, high.
+    .PARAMETER LanguagePreference
+        Preferred response language as an ISO 639-1 code.
+    .PARAMETER ResponseFormat
+        Hashtable describing a JSON schema for structured output.
+    .PARAMETER StreamMode
+        Streaming mode: full or concise.
     .OUTPUTS
         System.String (JSON body)
     #>
@@ -95,7 +120,31 @@ function ConvertTo-XPCBody {
 
         [string[]]$DomainFilter,
 
-        [string]$RecencyFilter
+        [string]$RecencyFilter,
+
+        [bool]$ReturnImages = $false,
+
+        [bool]$ReturnRelatedQuestions = $false,
+
+        [string]$SearchAfterDateFilter,
+
+        [string]$SearchBeforeDateFilter,
+
+        [string]$LastUpdatedAfterFilter,
+
+        [string]$LastUpdatedBeforeFilter,
+
+        [string[]]$SearchLanguageFilter,
+
+        [bool]$DisableSearch = $false,
+
+        [string]$ReasoningEffort,
+
+        [string]$LanguagePreference,
+
+        [hashtable]$ResponseFormat,
+
+        [string]$StreamMode
     )
 
     $messages = [System.Collections.ArrayList]::new()
@@ -129,7 +178,55 @@ function ConvertTo-XPCBody {
         $body['search_recency_filter'] = $RecencyFilter
     }
 
-    return ($body | ConvertTo-Json -Depth 10 -Compress)
+    if ($ReturnImages) {
+        $body['return_images'] = $true
+    }
+
+    if ($ReturnRelatedQuestions) {
+        $body['return_related_questions'] = $true
+    }
+
+    if ($SearchAfterDateFilter) {
+        $body['search_after_date_filter'] = $SearchAfterDateFilter
+    }
+
+    if ($SearchBeforeDateFilter) {
+        $body['search_before_date_filter'] = $SearchBeforeDateFilter
+    }
+
+    if ($LastUpdatedAfterFilter) {
+        $body['last_updated_after_filter'] = $LastUpdatedAfterFilter
+    }
+
+    if ($LastUpdatedBeforeFilter) {
+        $body['last_updated_before_filter'] = $LastUpdatedBeforeFilter
+    }
+
+    if ($SearchLanguageFilter -and $SearchLanguageFilter.Count -gt 0) {
+        $body['search_language_filter'] = $SearchLanguageFilter
+    }
+
+    if ($DisableSearch) {
+        $body['disable_search'] = $true
+    }
+
+    if ($ReasoningEffort) {
+        $body['reasoning_effort'] = $ReasoningEffort
+    }
+
+    if ($LanguagePreference) {
+        $body['language_preference'] = $LanguagePreference
+    }
+
+    if ($ResponseFormat -and $ResponseFormat.Count -gt 0) {
+        $body['response_format'] = $ResponseFormat
+    }
+
+    if ($StreamMode) {
+        $body['stream_mode'] = $StreamMode
+    }
+
+    return ($body | ConvertTo-Json -Depth 20 -Compress)
 }
 
 #endregion
@@ -144,6 +241,9 @@ function Invoke-Perplexity {
         Posts a question to the PerplexityXPC broker running on localhost. By default,
         returns only the answer text and prints citations below. Use -Raw to receive
         the full JSON response object for advanced processing.
+
+        Supports all Perplexity Sonar API parameters including structured output,
+        date filters, image search, reasoning effort, and language preferences.
     .PARAMETER Query
         The question or prompt to send to Perplexity. This is a mandatory positional
         parameter.
@@ -165,6 +265,26 @@ function Invoke-Perplexity {
         One or more domain names to restrict the search to (e.g., 'docs.microsoft.com').
     .PARAMETER RecencyFilter
         Limit results to a time window. Valid values: hour, day, week, month, year.
+    .PARAMETER ReturnImages
+        When specified, requests image results from the API.
+    .PARAMETER ReturnRelatedQuestions
+        When specified, requests related questions from the API.
+    .PARAMETER DateAfter
+        Only include search results published after this date (MM/DD/YYYY format).
+    .PARAMETER DateBefore
+        Only include search results published before this date (MM/DD/YYYY format).
+    .PARAMETER DisableSearch
+        When specified, disables all web search. Model answers from training data only.
+    .PARAMETER ReasoningEffort
+        Reasoning effort level for sonar-reasoning-pro model only.
+        Valid values: minimal, low, medium, high.
+    .PARAMETER Language
+        Preferred response language as an ISO 639-1 code (e.g., 'en', 'fr', 'de').
+    .PARAMETER StructuredOutput
+        A hashtable describing a JSON schema for structured output.
+        The response content will be constrained to this schema.
+    .PARAMETER SearchLanguage
+        Restrict search results to content in these ISO 639-1 language codes.
     .PARAMETER Raw
         Return the full response object instead of just the answer text.
     .PARAMETER Port
@@ -186,6 +306,14 @@ function Invoke-Perplexity {
         Invoke-Perplexity 'CVE-2024-1234 details' -DomainFilter 'nvd.nist.gov','cve.mitre.org'
 
         Restricts search results to the NVD and MITRE CVE databases.
+    .EXAMPLE
+        Invoke-Perplexity 'Quantum computing breakthroughs' -DateAfter '01/01/2025' -ReturnRelatedQuestions
+
+        Returns results published after January 2025, plus related questions.
+    .EXAMPLE
+        Invoke-Perplexity 'Analyze this logic' -Model sonar-reasoning-pro -ReasoningEffort high
+
+        Uses extended reasoning with maximum effort.
     #>
     [CmdletBinding()]
     param(
@@ -218,6 +346,34 @@ function Invoke-Perplexity {
         [string]$RecencyFilter,
 
         [Parameter()]
+        [switch]$ReturnImages,
+
+        [Parameter()]
+        [switch]$ReturnRelatedQuestions,
+
+        [Parameter()]
+        [string]$DateAfter,
+
+        [Parameter()]
+        [string]$DateBefore,
+
+        [Parameter()]
+        [switch]$DisableSearch,
+
+        [Parameter()]
+        [ValidateSet('minimal', 'low', 'medium', 'high')]
+        [string]$ReasoningEffort,
+
+        [Parameter()]
+        [string]$Language,
+
+        [Parameter()]
+        [hashtable]$StructuredOutput,
+
+        [Parameter()]
+        [string[]]$SearchLanguage,
+
+        [Parameter()]
         [switch]$Raw,
 
         [Parameter()]
@@ -230,9 +386,9 @@ function Invoke-Perplexity {
     }
 
     $bodyParams = @{
-        Query       = $Query
-        Model       = $Model
-        SearchMode  = $SearchMode
+        Query      = $Query
+        Model      = $Model
+        SearchMode = $SearchMode
     }
 
     if ($SystemPrompt) { $bodyParams['SystemPrompt'] = $SystemPrompt }
@@ -240,6 +396,15 @@ function Invoke-Perplexity {
     if ($MaxTokens -gt 0) { $bodyParams['MaxTokens'] = $MaxTokens }
     if ($DomainFilter) { $bodyParams['DomainFilter'] = $DomainFilter }
     if ($RecencyFilter) { $bodyParams['RecencyFilter'] = $RecencyFilter }
+    if ($ReturnImages) { $bodyParams['ReturnImages'] = $true }
+    if ($ReturnRelatedQuestions) { $bodyParams['ReturnRelatedQuestions'] = $true }
+    if ($DateAfter) { $bodyParams['SearchAfterDateFilter'] = $DateAfter }
+    if ($DateBefore) { $bodyParams['SearchBeforeDateFilter'] = $DateBefore }
+    if ($DisableSearch) { $bodyParams['DisableSearch'] = $true }
+    if ($ReasoningEffort) { $bodyParams['ReasoningEffort'] = $ReasoningEffort }
+    if ($Language) { $bodyParams['LanguagePreference'] = $Language }
+    if ($StructuredOutput) { $bodyParams['ResponseFormat'] = $StructuredOutput }
+    if ($SearchLanguage) { $bodyParams['SearchLanguageFilter'] = $SearchLanguage }
 
     $jsonBody = ConvertTo-XPCBody @bodyParams
 
@@ -4313,13 +4478,17 @@ function Invoke-PerplexityADAnalysis {
 
 #region Module Aliases
 
-Set-Alias -Name pplx      -Value Invoke-Perplexity          -Scope Global
-Set-Alias -Name pplxcode  -Value Invoke-PerplexityCodeReview -Scope Global
-Set-Alias -Name pplxnet   -Value Invoke-PerplexityNetDiag    -Scope Global
-Set-Alias -Name pplxevt   -Value Invoke-PerplexityEventAnalysis -Scope Global
-Set-Alias -Name pplxclip  -Value Invoke-PerplexityClipboard  -Scope Global
-Set-Alias -Name pplxhelp  -Value Show-XPCHelp               -Scope Global
-Set-Alias -Name xpc       -Value Invoke-XPC                 -Scope Global
+Set-Alias -Name pplx      -Value Invoke-Perplexity              -Scope Global
+Set-Alias -Name pplxcode  -Value Invoke-PerplexityCodeReview     -Scope Global
+Set-Alias -Name pplxnet   -Value Invoke-PerplexityNetDiag        -Scope Global
+Set-Alias -Name pplxevt   -Value Invoke-PerplexityEventAnalysis  -Scope Global
+Set-Alias -Name pplxclip  -Value Invoke-PerplexityClipboard      -Scope Global
+Set-Alias -Name pplxhelp  -Value Show-XPCHelp                   -Scope Global
+Set-Alias -Name xpc       -Value Invoke-XPC                     -Scope Global
+Set-Alias -Name pplxdeep  -Value Invoke-PerplexityDeepResearch   -Scope Global
+Set-Alias -Name pplxthink -Value Invoke-PerplexityReasoning      -Scope Global
+Set-Alias -Name pplxacad  -Value Invoke-PerplexityAcademic       -Scope Global
+Set-Alias -Name pplxsec   -Value Invoke-PerplexitySecurityAnalysis -Scope Global
 
 #endregion
 
@@ -4369,7 +4538,7 @@ function Show-XPCHelp {
         [string]$Command,
 
         [Parameter(ParameterSetName = 'Category')]
-        [ValidateSet('core', 'mcp', 'files', 'batch', 'it', 'office', 'windows', 'remote', 'clipboard', 'all')]
+        [ValidateSet('core', 'mcp', 'files', 'batch', 'it', 'office', 'windows', 'remote', 'clipboard', 'premium', 'all')]
         [string]$Category = 'all',
 
         [Parameter(ParameterSetName = 'Examples')]
@@ -4382,7 +4551,7 @@ function Show-XPCHelp {
         [switch]$Full
     )
 
-    $ver = '1.3.0'
+    $ver = '1.4.0'
 
     # If a specific command was requested, delegate to Get-Help
     if ($PSCmdlet.ParameterSetName -eq 'Command' -and $Command) {
@@ -4427,6 +4596,10 @@ function Show-XPCHelp {
         Write-Host ('    {0,-12} {1}' -f 'pplxerr', 'Ask-LastError') -ForegroundColor Cyan
         Write-Host ('    {0,-12} {1}' -f 'pplxhelp', 'Show-XPCHelp') -ForegroundColor Cyan
         Write-Host ('    {0,-12} {1}' -f 'xpc', 'Show-XPCHelp') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxdeep', 'Invoke-PerplexityDeepResearch') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxthink', 'Invoke-PerplexityReasoning') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxacad', 'Invoke-PerplexityAcademic') -ForegroundColor Cyan
+        Write-Host ('    {0,-12} {1}' -f 'pplxsec', 'Invoke-PerplexitySecurityAnalysis') -ForegroundColor Cyan
         Write-Host ''
         if ($Aliases -and -not $Full) { return }
     }
@@ -4515,6 +4688,19 @@ function Show-XPCHelp {
                 @{ Name = 'Invoke-PerplexityClipboard'; Desc = 'Query clipboard contents (alias: pplxclip)'; Ex = 'pplxclip -Prompt "Debug this error"' }
                 @{ Name = 'Watch-XPCClipboard';         Desc = 'Monitor clipboard for auto-query';           Ex = 'Watch-XPCClipboard -AutoQuery -Notify' }
                 @{ Name = 'Send-XPCNotification';       Desc = 'Send Windows toast notification';            Ex = 'Send-XPCNotification -Title "Done" -Body "Analysis complete"' }
+            )
+        }
+        premium = @{
+            Title = 'Premium / Enterprise Max'
+            Color = 'DarkMagenta'
+            Commands = @(
+                @{ Name = 'Invoke-PerplexityDeepResearch'; Desc = 'Deep research with async polling';            Ex = 'Invoke-PerplexityDeepResearch -Query "Zero trust architecture report" -OutputPath report.md' }
+                @{ Name = 'Invoke-PerplexityReasoning';    Desc = 'Chain-of-thought reasoning (4 effort levels)'; Ex = 'Invoke-PerplexityReasoning -Query "Analyze OSPF vs EIGRP" -Effort high -ShowThinking' }
+                @{ Name = 'Invoke-PerplexityStructured';   Desc = 'Schema-constrained JSON output';              Ex = 'Invoke-PerplexityStructured -Query "Top 5 firewalls" -Schema $schema' }
+                @{ Name = 'Invoke-PerplexityAcademic';     Desc = 'Academic/scholarly paper search';             Ex = 'Invoke-PerplexityAcademic -Query "mRNA vaccine efficacy" -DateAfter "01/01/2025"' }
+                @{ Name = 'Invoke-PerplexitySEC';          Desc = 'SEC EDGAR filing search';                     Ex = 'Invoke-PerplexitySEC -Query "Revenue breakdown" -Company "MSFT" -FilingType "10-K"' }
+                @{ Name = 'Invoke-PerplexityImageSearch';  Desc = 'Image search with format/domain filters';    Ex = 'Invoke-PerplexityImageSearch -Query "network topology diagram" -Format jpg,png' }
+                @{ Name = 'Get-PerplexityAsyncJob';        Desc = 'Check async job status or list all';          Ex = 'Get-PerplexityAsyncJob -ListAll' }
             )
         }
     }
@@ -4615,6 +4801,789 @@ function Invoke-XPC {
 
     # Otherwise, treat as a Perplexity query
     Invoke-Perplexity -Query $joined
+}
+
+#endregion
+
+#region Premium API Functions
+
+function Invoke-PerplexityDeepResearch {
+    <#
+    .SYNOPSIS
+        Submits a deep research query using the sonar-deep-research model and polls
+        until the job completes.
+    .DESCRIPTION
+        Uses the Perplexity async API to run a sonar-deep-research job, which can
+        take several minutes to complete. By default, polls every 15 seconds until
+        the job is COMPLETED or FAILED, showing a progress bar.
+
+        When complete, returns the response content or the full response object if
+        -Raw is specified. Optionally saves the result to a file.
+    .PARAMETER Query
+        The research question to submit. This is a mandatory positional parameter.
+    .PARAMETER Poll
+        When specified (the default behavior), polls automatically until the job
+        completes or the timeout is reached.
+    .PARAMETER PollIntervalSeconds
+        How many seconds to wait between status checks. Default: 15.
+    .PARAMETER TimeoutMinutes
+        Maximum time to wait for the job to complete. Default: 10.
+    .PARAMETER OutputPath
+        If specified, saves the completed response content to this file path.
+    .PARAMETER Raw
+        When specified, returns the full AsyncJobResponse object instead of just
+        the answer text.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityDeepResearch -Query 'Comprehensive analysis of NIST CSF 2.0'
+
+        Submits a deep research job and polls until complete, printing the result.
+    .EXAMPLE
+        Invoke-PerplexityDeepResearch 'History of quantum computing' -OutputPath C:\Reports\quantum.md
+
+        Saves the completed research to a markdown file.
+    .EXAMPLE
+        $result = Invoke-PerplexityDeepResearch 'AI market landscape 2025' -Raw
+        $result.response.citations
+
+        Returns the full job result for custom processing.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter()]
+        [switch]$Poll,
+
+        [Parameter()]
+        [int]$PollIntervalSeconds = 15,
+
+        [Parameter()]
+        [int]$TimeoutMinutes = 10,
+
+        [Parameter()]
+        [string]$OutputPath,
+
+        [Parameter()]
+        [switch]$Raw,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    if (-not (Test-XPCConnection -Port $Port)) {
+        Write-Error ('PerplexityXPC broker is not reachable at {0}:{1}.' -f $script:BaseUrl, $Port)
+        return
+    }
+
+    # Build the request body for sonar-deep-research
+    $bodyParams = @{
+        Query = $Query
+        Model = 'sonar-deep-research'
+    }
+    $jsonBody = ConvertTo-XPCBody @bodyParams
+
+    $submitUrl = ('{0}:{1}/perplexity/async' -f $script:BaseUrl, $Port)
+    Write-Verbose ('POST {0}' -f $submitUrl)
+
+    try {
+        $job = Invoke-RestMethod -Uri $submitUrl -Method Post -Body $jsonBody -ContentType 'application/json' -ErrorAction Stop
+    }
+    catch {
+        Write-Error ('Failed to submit deep research job: {0}' -f $_.Exception.Message)
+        return
+    }
+
+    $jobId = $job.id
+    if (-not $jobId) {
+        Write-Error 'Deep research job submission did not return a job ID.'
+        return
+    }
+
+    Write-Verbose ('Job submitted. ID: {0}' -f $jobId)
+    Write-Output ('Deep research job submitted. ID: {0}' -f $jobId)
+
+    # If -Poll not explicitly passed, default to auto-polling
+    # The switch is present by default in the calling convention - we always poll
+    # unless the caller explicitly wants fire-and-forget (they would just use the raw ID)
+
+    $pollUrl   = ('{0}:{1}/perplexity/async/{2}' -f $script:BaseUrl, $Port, $jobId)
+    $deadline  = (Get-Date).AddMinutes($TimeoutMinutes)
+    $attempt   = 0
+
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds $PollIntervalSeconds
+        $attempt++
+
+        try {
+            $jobStatus = Invoke-RestMethod -Uri $pollUrl -Method Get -ErrorAction Stop
+        }
+        catch {
+            Write-Warning ('Poll attempt {0} failed: {1}' -f $attempt, $_.Exception.Message)
+            continue
+        }
+
+        $status = $jobStatus.status
+        $pctComplete = if ($status -eq 'IN_PROGRESS') { 50 } elseif ($status -eq 'COMPLETED') { 100 } else { 10 }
+
+        Write-Progress `
+            -Activity 'Deep Research in Progress' `
+            -Status ('Job {0} - Status: {1} (poll #{2})' -f $jobId, $status, $attempt) `
+            -PercentComplete $pctComplete
+
+        if ($status -eq 'COMPLETED') {
+            Write-Progress -Activity 'Deep Research in Progress' -Completed
+
+            if ($Raw) {
+                return $jobStatus
+            }
+
+            $content = $null
+            if ($jobStatus.response -and
+                $jobStatus.response.choices -and
+                $jobStatus.response.choices.Count -gt 0) {
+                $content = $jobStatus.response.choices[0].message.content
+            }
+            else {
+                $content = $jobStatus | ConvertTo-Json -Depth 10
+            }
+
+            if ($OutputPath) {
+                $content | Out-File -FilePath $OutputPath -Encoding utf8 -Force
+                Write-Output ('Result saved to: {0}' -f $OutputPath)
+            }
+
+            Write-Output $content
+
+            # Show citations if present
+            if ($jobStatus.response -and $jobStatus.response.citations -and
+                $jobStatus.response.citations.Count -gt 0) {
+                Write-Output ''
+                Write-Output '--- Citations ---'
+                $i = 1
+                foreach ($citation in $jobStatus.response.citations) {
+                    Write-Output ('[{0}] {1}' -f $i, $citation)
+                    $i++
+                }
+            }
+            return
+        }
+
+        if ($status -eq 'FAILED') {
+            Write-Progress -Activity 'Deep Research in Progress' -Completed
+            $errMsg = $jobStatus.error_message
+            if (-not $errMsg) { $errMsg = 'Unknown error' }
+            Write-Error ('Deep research job {0} FAILED: {1}' -f $jobId, $errMsg)
+            return
+        }
+    }
+
+    Write-Progress -Activity 'Deep Research in Progress' -Completed
+    Write-Warning ('Deep research job {0} did not complete within {1} minute(s). Use Get-PerplexityAsyncJob -Id ''{0}'' to check status.' -f $jobId, $TimeoutMinutes)
+}
+
+function Get-PerplexityAsyncJob {
+    <#
+    .SYNOPSIS
+        Retrieves the status or result of a Perplexity async job.
+    .DESCRIPTION
+        Queries the PerplexityXPC broker for the status of a specific async job by ID,
+        or lists all async jobs for the current API key.
+    .PARAMETER Id
+        The ID of a specific async job to retrieve.
+    .PARAMETER ListAll
+        When specified, lists all async jobs instead of a specific one.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Get-PerplexityAsyncJob -Id 'job_abc123'
+
+        Returns the full status and result for the specified job.
+    .EXAMPLE
+        Get-PerplexityAsyncJob -ListAll
+
+        Lists all async jobs and their current statuses.
+    .EXAMPLE
+        Get-PerplexityAsyncJob -ListAll | Where-Object { $_.status -eq 'COMPLETED' }
+
+        Filters to show only completed jobs.
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'ById')]
+    param(
+        [Parameter(Mandatory = $true, ParameterSetName = 'ById', Position = 0)]
+        [string]$Id,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ListAll')]
+        [switch]$ListAll,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    if (-not (Test-XPCConnection -Port $Port)) {
+        Write-Error ('PerplexityXPC broker is not reachable at {0}:{1}.' -f $script:BaseUrl, $Port)
+        return
+    }
+
+    if ($ListAll) {
+        $url = ('{0}:{1}/perplexity/async' -f $script:BaseUrl, $Port)
+        Write-Verbose ('GET {0}' -f $url)
+        try {
+            $jobs = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop
+            return $jobs
+        }
+        catch {
+            Write-Error ('Failed to list async jobs: {0}' -f $_.Exception.Message)
+            return
+        }
+    }
+
+    $url = ('{0}:{1}/perplexity/async/{2}' -f $script:BaseUrl, $Port, $Id)
+    Write-Verbose ('GET {0}' -f $url)
+    try {
+        $job = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop
+        return $job
+    }
+    catch {
+        Write-Error ('Failed to get async job {0}: {1}' -f $Id, $_.Exception.Message)
+        return
+    }
+}
+
+function Invoke-PerplexityStructured {
+    <#
+    .SYNOPSIS
+        Sends a query to Perplexity and returns the response parsed as a structured
+        PSCustomObject based on a JSON schema.
+    .DESCRIPTION
+        Wraps Invoke-Perplexity with -StructuredOutput, then parses the JSON content
+        of the response into a PSCustomObject. Use this when you need machine-readable
+        structured data rather than free-form text.
+
+        The schema must be a valid JSON Schema hashtable. The API will constrain its
+        response to match the provided schema.
+    .PARAMETER Query
+        The question or prompt to send to Perplexity. Mandatory.
+    .PARAMETER Schema
+        A hashtable describing the JSON schema for the expected response structure.
+        Must be a valid JSON Schema object.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        $schema = @{
+            type = 'object'
+            properties = @{
+                companies = @{
+                    type  = 'array'
+                    items = @{
+                        type = 'object'
+                        properties = @{
+                            name         = @{ type = 'string' }
+                            market_share = @{ type = 'number' }
+                        }
+                    }
+                }
+            }
+        }
+        Invoke-PerplexityStructured -Query 'Top 5 cloud providers by market share' -Schema $schema
+
+        Returns a PSCustomObject with a companies array containing name and market_share.
+    .EXAMPLE
+        $cvssSchema = @{ type = 'object'; properties = @{ score = @{ type = 'number' }; severity = @{ type = 'string' } } }
+        Invoke-PerplexityStructured -Query 'CVSS score for Log4Shell CVE-2021-44228' -Schema $cvssSchema
+
+        Returns structured CVSS information for Log4Shell.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Schema,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    # Wrap schema in the response_format envelope
+    $responseFormat = @{
+        type        = 'json_schema'
+        json_schema = $Schema
+    }
+
+    $rawResponse = Invoke-Perplexity `
+        -Query $Query `
+        -Model $Model `
+        -StructuredOutput $responseFormat `
+        -Raw `
+        -Port $Port
+
+    if (-not $rawResponse) { return }
+
+    $content = $null
+    if ($rawResponse.choices -and $rawResponse.choices.Count -gt 0) {
+        $content = $rawResponse.choices[0].message.content
+    }
+
+    if (-not $content) {
+        Write-Error 'Structured response contained no content.'
+        return
+    }
+
+    try {
+        $parsed = $content | ConvertFrom-Json
+        return $parsed
+    }
+    catch {
+        Write-Warning ('Response content is not valid JSON. Returning raw text. Error: {0}' -f $_.Exception.Message)
+        return $content
+    }
+}
+
+function Invoke-PerplexityReasoning {
+    <#
+    .SYNOPSIS
+        Sends a query to the sonar-reasoning-pro model with configurable reasoning
+        effort.
+    .DESCRIPTION
+        Convenience wrapper for sonar-reasoning-pro. By default strips the
+        <think>...</think> reasoning chain from the output and returns only the
+        final answer. Use -ShowThinking to display the full reasoning chain.
+    .PARAMETER Query
+        The question or problem to reason about. Mandatory.
+    .PARAMETER Effort
+        The reasoning effort level. Valid values: minimal, low, medium, high.
+        Default: high.
+    .PARAMETER ShowThinking
+        When specified, displays the <think>...</think> section before the answer.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityReasoning -Query 'Prove that there are infinite primes.'
+
+        Answers using extended reasoning at maximum effort, stripping the think block.
+    .EXAMPLE
+        Invoke-PerplexityReasoning 'Debug this logic error' -Effort medium -ShowThinking
+
+        Shows the full reasoning chain followed by the conclusion.
+    .EXAMPLE
+        Invoke-PerplexityReasoning 'Quick sanity check' -Effort minimal
+
+        Uses minimal reasoning effort for fast responses.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter()]
+        [ValidateSet('minimal', 'low', 'medium', 'high')]
+        [string]$Effort = 'high',
+
+        [Parameter()]
+        [switch]$ShowThinking,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    $rawResponse = Invoke-Perplexity `
+        -Query $Query `
+        -Model 'sonar-reasoning-pro' `
+        -ReasoningEffort $Effort `
+        -Raw `
+        -Port $Port
+
+    if (-not $rawResponse) { return }
+
+    $content = $null
+    if ($rawResponse.choices -and $rawResponse.choices.Count -gt 0) {
+        $content = $rawResponse.choices[0].message.content
+    }
+
+    if (-not $content) {
+        Write-Warning 'Reasoning model returned no content.'
+        return
+    }
+
+    # Extract think block if present
+    $thinkPattern = '(?s)<think>(.*?)</think>'
+    $thinkMatch   = [regex]::Match($content, $thinkPattern)
+
+    if ($ShowThinking -and $thinkMatch.Success) {
+        Write-Output '=== Reasoning Chain ==='
+        Write-Output ($thinkMatch.Groups[1].Value.Trim())
+        Write-Output ''
+        Write-Output '=== Answer ==='
+    }
+
+    # Strip the think block to get the clean answer
+    $answer = [regex]::Replace($content, $thinkPattern, '').Trim()
+
+    Write-Output $answer
+
+    # Display citations
+    if ($rawResponse.citations -and $rawResponse.citations.Count -gt 0) {
+        Write-Output ''
+        Write-Output '--- Citations ---'
+        $i = 1
+        foreach ($citation in $rawResponse.citations) {
+            Write-Output ('[{0}] {1}' -f $i, $citation)
+            $i++
+        }
+    }
+}
+
+function Invoke-PerplexityAcademic {
+    <#
+    .SYNOPSIS
+        Searches academic literature using Perplexity's academic search mode.
+    .DESCRIPTION
+        Convenience wrapper for Invoke-Perplexity with search_mode set to
+        'academic'. Optionally filters results by publication date range and
+        requests related questions.
+    .PARAMETER Query
+        The academic research question or topic. Mandatory.
+    .PARAMETER DateAfter
+        Only include papers published after this date (MM/DD/YYYY format).
+    .PARAMETER DateBefore
+        Only include papers published before this date (MM/DD/YYYY format).
+    .PARAMETER ReturnRelated
+        When specified, requests related questions from the API.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityAcademic -Query 'CRISPR off-target effects in human cells'
+
+        Searches academic sources for CRISPR research.
+    .EXAMPLE
+        Invoke-PerplexityAcademic 'Transformer architecture attention mechanisms' -DateAfter '01/01/2023'
+
+        Returns only papers published after January 2023.
+    .EXAMPLE
+        Invoke-PerplexityAcademic 'Antibiotic resistance mechanisms' -ReturnRelated
+
+        Returns academic results plus suggested related research questions.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter()]
+        [string]$DateAfter,
+
+        [Parameter()]
+        [string]$DateBefore,
+
+        [Parameter()]
+        [switch]$ReturnRelated,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    $params = @{
+        Query      = $Query
+        Model      = $Model
+        SearchMode = 'academic'
+        Port       = $Port
+    }
+
+    if ($DateAfter) { $params['DateAfter'] = $DateAfter }
+    if ($DateBefore) { $params['DateBefore'] = $DateBefore }
+    if ($ReturnRelated) { $params['ReturnRelatedQuestions'] = $true }
+
+    $rawResponse = Invoke-Perplexity @params -Raw
+
+    if (-not $rawResponse) { return }
+
+    $content = $null
+    if ($rawResponse.choices -and $rawResponse.choices.Count -gt 0) {
+        $content = $rawResponse.choices[0].message.content
+    }
+    else {
+        $content = $rawResponse | ConvertTo-Json -Depth 5
+    }
+
+    Write-Output $content
+
+    if ($rawResponse.citations -and $rawResponse.citations.Count -gt 0) {
+        Write-Output ''
+        Write-Output '--- Academic Sources ---'
+        $i = 1
+        foreach ($citation in $rawResponse.citations) {
+            Write-Output ('[{0}] {1}' -f $i, $citation)
+            $i++
+        }
+    }
+
+    if ($rawResponse.related_questions -and $rawResponse.related_questions.Count -gt 0) {
+        Write-Output ''
+        Write-Output '--- Related Questions ---'
+        foreach ($rq in $rawResponse.related_questions) {
+            Write-Output ('- {0}' -f $rq)
+        }
+    }
+}
+
+function Invoke-PerplexitySEC {
+    <#
+    .SYNOPSIS
+        Searches SEC filings using Perplexity's SEC search mode.
+    .DESCRIPTION
+        Convenience wrapper for Invoke-Perplexity with search_mode set to 'sec'.
+        Optionally includes company name and filing type context in the query to
+        focus results on specific filings.
+    .PARAMETER Query
+        The question or topic to research in SEC filings. Mandatory.
+    .PARAMETER Company
+        Optional company name or ticker symbol to add context to the query.
+    .PARAMETER FilingType
+        Optional filing type (e.g., '10-K', '10-Q', '8-K') to scope the search.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar-pro.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexitySEC -Query 'revenue and operating income' -Company 'MSFT' -FilingType '10-K'
+
+        Searches Microsoft 10-K filings for revenue and operating income data.
+    .EXAMPLE
+        Invoke-PerplexitySEC 'material risk factors' -Company 'Tesla'
+
+        Searches all Tesla SEC filings for material risk factor disclosures.
+    .EXAMPLE
+        Invoke-PerplexitySEC 'data breach notification' -FilingType '8-K'
+
+        Searches 8-K filings for data breach disclosures across all companies.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter()]
+        [string]$Company,
+
+        [Parameter()]
+        [string]$FilingType,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar-pro',
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    # Build an enriched query with company and filing type context
+    $enrichedQuery = $Query
+    $contextParts  = [System.Collections.ArrayList]::new()
+
+    if ($Company) {
+        $null = $contextParts.Add($Company)
+    }
+    if ($FilingType) {
+        $null = $contextParts.Add($FilingType)
+    }
+
+    if ($contextParts.Count -gt 0) {
+        $enrichedQuery = ('{0} [{1}]' -f $Query, ($contextParts -join ', '))
+    }
+
+    $rawResponse = Invoke-Perplexity `
+        -Query $enrichedQuery `
+        -Model $Model `
+        -SearchMode 'sec' `
+        -Raw `
+        -Port $Port
+
+    if (-not $rawResponse) { return }
+
+    $content = $null
+    if ($rawResponse.choices -and $rawResponse.choices.Count -gt 0) {
+        $content = $rawResponse.choices[0].message.content
+    }
+    else {
+        $content = $rawResponse | ConvertTo-Json -Depth 5
+    }
+
+    Write-Output $content
+
+    if ($rawResponse.citations -and $rawResponse.citations.Count -gt 0) {
+        Write-Output ''
+        Write-Output '--- SEC Filing Sources ---'
+        $i = 1
+        foreach ($citation in $rawResponse.citations) {
+            Write-Output ('[{0}] {1}' -f $i, $citation)
+            $i++
+        }
+    }
+}
+
+function Invoke-PerplexityImageSearch {
+    <#
+    .SYNOPSIS
+        Searches for images through Perplexity with optional format and domain
+        filters.
+    .DESCRIPTION
+        Sends a query to Perplexity with return_images enabled. Optionally filters
+        returned images by file format (jpg, png, etc.) and/or source domain.
+
+        By default displays a summary of image results. Use -Raw to receive the
+        full response object.
+    .PARAMETER Query
+        The image search query. Mandatory.
+    .PARAMETER Format
+        One or more image file formats to filter by (e.g., 'jpg', 'png', 'webp').
+    .PARAMETER DomainFilter
+        One or more domains to restrict image results to.
+    .PARAMETER Model
+        The Perplexity model to use. Default: sonar.
+    .PARAMETER Raw
+        When specified, returns the full response object.
+    .PARAMETER Port
+        Port the broker is listening on. Default: 47777.
+    .EXAMPLE
+        Invoke-PerplexityImageSearch -Query 'Azure architecture diagram'
+
+        Returns image results for Azure architecture diagrams.
+    .EXAMPLE
+        Invoke-PerplexityImageSearch 'network topology diagram' -Format 'png','svg' -DomainFilter 'microsoft.com','cisco.com'
+
+        Returns only PNG/SVG images from Microsoft and Cisco domains.
+    .EXAMPLE
+        $result = Invoke-PerplexityImageSearch 'cloud computing infographic' -Raw
+        $result.images | Format-Table url, description
+
+        Returns raw response for custom image processing.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Query,
+
+        [Parameter()]
+        [string[]]$Format,
+
+        [Parameter()]
+        [string[]]$DomainFilter,
+
+        [Parameter()]
+        [ValidateSet('sonar', 'sonar-pro', 'sonar-reasoning-pro', 'sonar-deep-research')]
+        [string]$Model = 'sonar',
+
+        [Parameter()]
+        [switch]$Raw,
+
+        [Parameter()]
+        [int]$Port = $script:DefaultPort
+    )
+
+    if (-not (Test-XPCConnection -Port $Port)) {
+        Write-Error ('PerplexityXPC broker is not reachable at {0}:{1}.' -f $script:BaseUrl, $Port)
+        return
+    }
+
+    $bodyParams = @{
+        Query        = $Query
+        Model        = $Model
+        ReturnImages = $true
+    }
+
+    if ($DomainFilter -and $DomainFilter.Count -gt 0) {
+        $bodyParams['DomainFilter'] = $DomainFilter
+    }
+
+    $jsonBody = ConvertTo-XPCBody @bodyParams
+
+    # Append image-specific filters directly to the body hashtable before serializing
+    # We need to re-serialize with image filters, so re-build the body
+    $bodyHash = $jsonBody | ConvertFrom-Json
+    # Convert PSCustomObject back to a mutable structure via JSON round-trip
+    $bodyRebuild = @{}
+    $bodyHash.PSObject.Properties | ForEach-Object {
+        $bodyRebuild[$_.Name] = $_.Value
+    }
+
+    if ($Format -and $Format.Count -gt 0) {
+        $bodyRebuild['image_format_filter'] = $Format
+    }
+    if ($DomainFilter -and $DomainFilter.Count -gt 0) {
+        $bodyRebuild['image_domain_filter'] = $DomainFilter
+    }
+
+    $finalJson = $bodyRebuild | ConvertTo-Json -Depth 20 -Compress
+
+    $url = ('{0}:{1}/perplexity' -f $script:BaseUrl, $Port)
+    Write-Verbose ('POST {0}' -f $url)
+
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Post -Body $finalJson -ContentType 'application/json' -ErrorAction Stop
+    }
+    catch {
+        $statusCode = $null
+        if ($_.Exception.Response) {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+        }
+        if ($statusCode) {
+            Write-Error ('Broker returned HTTP {0}: {1}' -f $statusCode, $_.Exception.Message)
+        }
+        else {
+            Write-Error ('Failed to reach broker: {0}' -f $_.Exception.Message)
+        }
+        return
+    }
+
+    if ($Raw) {
+        return $response
+    }
+
+    # Display image results
+    if ($response.images -and $response.images.Count -gt 0) {
+        Write-Output ('Found {0} image(s):' -f $response.images.Count)
+        Write-Output ''
+        $i = 1
+        foreach ($img in $response.images) {
+            Write-Output ('[{0}] {1}' -f $i, $img.url)
+            if ($img.description) {
+                Write-Output ('    Description : {0}' -f $img.description)
+            }
+            if ($img.origin_url) {
+                Write-Output ('    Source page  : {0}' -f $img.origin_url)
+            }
+            Write-Output ''
+            $i++
+        }
+    }
+    else {
+        Write-Output 'No images returned. The model may not have found relevant images for this query.'
+    }
+
+    # Also show text answer if present
+    if ($response.choices -and $response.choices.Count -gt 0) {
+        $content = $response.choices[0].message.content
+        if ($content) {
+            Write-Output '--- Answer ---'
+            Write-Output $content
+        }
+    }
 }
 
 #endregion

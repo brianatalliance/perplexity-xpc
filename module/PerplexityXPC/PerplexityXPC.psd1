@@ -11,7 +11,7 @@
 RootModule = 'PerplexityXPC.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.0'
+ModuleVersion = '1.4.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -105,7 +105,15 @@ FunctionsToExport = @(
     'Invoke-PerplexityServerAnalysis',
     'Invoke-PerplexityADAnalysis',
     'Show-XPCHelp',
-    'Invoke-XPC'
+    'Invoke-XPC',
+    # Premium API Functions
+    'Invoke-PerplexityDeepResearch',
+    'Get-PerplexityAsyncJob',
+    'Invoke-PerplexityStructured',
+    'Invoke-PerplexityReasoning',
+    'Invoke-PerplexityAcademic',
+    'Invoke-PerplexitySEC',
+    'Invoke-PerplexityImageSearch'
 )
 
 # Cmdlets to export from this module
@@ -115,7 +123,7 @@ CmdletsToExport = @()
 VariablesToExport = @()
 
 # Aliases to export from this module
-AliasesToExport = @('pplx', 'pplxcode', 'pplxnet', 'pplxevt', 'pplxclip', 'pplxhelp', 'xpc')
+AliasesToExport = @('pplx', 'pplxcode', 'pplxnet', 'pplxevt', 'pplxclip', 'pplxhelp', 'xpc', 'pplxdeep', 'pplxthink', 'pplxacad', 'pplxsec')
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

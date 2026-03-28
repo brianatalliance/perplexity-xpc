@@ -100,6 +100,97 @@ public static class HttpBroker
         .WithName("PerplexityChatStream");
 
         // -----------------------------------------------------------------------
+        // Async job endpoints (sonar-deep-research and long-running queries)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Submit a request as an async job. Use this for sonar-deep-research
+        /// queries that may take minutes to complete.
+        /// Returns an AsyncJobResponse with the job ID and initial status CREATED.
+        /// </summary>
+        app.MapPost("/perplexity/async", async (
+            [FromBody] ChatRequest request,
+            PerplexityApiClient apiClient,
+            ILogger<WebApplication> logger,
+            CancellationToken ct) =>
+        {
+            logger.LogDebug(
+                "POST /perplexity/async model={Model}",
+                request.Model);
+
+            try
+            {
+                var job = await apiClient.SubmitAsyncAsync(request, ct);
+                return Results.Ok(job);
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogWarning(ex, "Async job submission failed.");
+                return Results.Problem(
+                    title: "Async Job Submission Failed",
+                    detail: ex.Message,
+                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
+            }
+        })
+        .WithName("PerplexityAsyncSubmit");
+
+        /// <summary>
+        /// List all async jobs for the configured API key.
+        /// Returns a list of AsyncJobSummary objects.
+        /// </summary>
+        app.MapGet("/perplexity/async", async (
+            PerplexityApiClient apiClient,
+            ILogger<WebApplication> logger,
+            CancellationToken ct) =>
+        {
+            logger.LogDebug("GET /perplexity/async");
+
+            try
+            {
+                var jobs = await apiClient.ListAsyncJobsAsync(ct);
+                return Results.Ok(jobs);
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogWarning(ex, "Failed to list async jobs.");
+                return Results.Problem(
+                    title: "List Async Jobs Failed",
+                    detail: ex.Message,
+                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
+            }
+        })
+        .WithName("PerplexityAsyncList");
+
+        /// <summary>
+        /// Get the status and result of a specific async job by ID.
+        /// Poll this endpoint until status is COMPLETED or FAILED.
+        /// When COMPLETED, the full ChatResponse is included in the response field.
+        /// </summary>
+        app.MapGet("/perplexity/async/{id}", async (
+            string id,
+            PerplexityApiClient apiClient,
+            ILogger<WebApplication> logger,
+            CancellationToken ct) =>
+        {
+            logger.LogDebug("GET /perplexity/async/{JobId}", id);
+
+            try
+            {
+                var job = await apiClient.GetAsyncJobAsync(id, ct);
+                return Results.Ok(job);
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogWarning(ex, "Failed to get async job {JobId}.", id);
+                return Results.Problem(
+                    title: "Get Async Job Failed",
+                    detail: ex.Message,
+                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
+            }
+        })
+        .WithName("PerplexityAsyncGet");
+
+        // -----------------------------------------------------------------------
         // MCP proxy endpoints
         // -----------------------------------------------------------------------
 
