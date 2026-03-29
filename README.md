@@ -529,13 +529,25 @@ PerplexityXPC/
 
 ---
 
+## Related Projects
+
+- [perplexity-windows-xpc](https://github.com/brianatalliance/perplexity-windows-xpc) — Perplexity AI for Windows — PowerShell, system tray, Office integration
+- [perplexity-connector](https://github.com/brianatalliance/perplexity-connector) — Perplexity Sonar API connector — CLI, streaming, async, structured output
+- [atera-dashboard](https://github.com/brianatalliance/atera-dashboard) — Atera RMM NOC dashboard — React + Vite + Tailwind + Recharts
+- [atera-connector](https://github.com/brianatalliance/atera-connector) — Atera RMM API v3 connector — Python CLI with full CRUD support
+- [synology-connector](https://github.com/brianatalliance/synology-connector) — Synology DSM Web API connector — 40 CLI actions across 10 modules
+- [udm-nspawn-pki](https://github.com/brianatalliance/udm-nspawn-pki) — Two-tier PKI in systemd-nspawn on UniFi Dream Machine Pro
+- [wireguard-vpn-spk](https://github.com/brianatalliance/wireguard-vpn-spk) — WireGuard VPN Tunnel SPK for Synology DS220+ (userspace wireguard-go)
+- [nas-git-sync](https://github.com/brianatalliance/nas-git-sync) — Automated GitHub to Synology NAS repo sync script
+
+## Author
+
+**Brian Vicente** — Network Coordinator & Cybersecurity Admin, [Alliance for Empowerment](https://www.allianceforempowerment.org)
+
+GitHub: [@brianatalliance](https://github.com/brianatalliance)
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
-
-## Related Projects
-
-- [perplexity-connector](https://github.com/brianatalliance/perplexity-connector) - Direct Perplexity API connector without the Windows service layer
-- [atera-connector](https://github.com/brianatalliance/atera-connector) - PowerShell module for the Atera RMM REST API, used alongside PerplexityXPC for IT ticket analysis
