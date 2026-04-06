@@ -58,7 +58,8 @@ public static class HttpBroker
                     statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
             }
         })
-        .WithName("PerplexityChat");
+        .WithName("PerplexityChat")
+        .WithOpenApi();
 
         /// <summary>
         /// Proxy a streaming chat request to Perplexity and forward as Server-Sent Events (SSE).
@@ -97,98 +98,8 @@ public static class HttpBroker
                 await ctx.Response.WriteAsync(errorLine, Encoding.UTF8, ct);
             }
         })
-        .WithName("PerplexityChatStream");
-
-        // -----------------------------------------------------------------------
-        // Async job endpoints (sonar-deep-research and long-running queries)
-        // -----------------------------------------------------------------------
-
-        /// <summary>
-        /// Submit a request as an async job. Use this for sonar-deep-research
-        /// queries that may take minutes to complete.
-        /// Returns an AsyncJobResponse with the job ID and initial status CREATED.
-        /// </summary>
-        app.MapPost("/perplexity/async", async (
-            [FromBody] ChatRequest request,
-            PerplexityApiClient apiClient,
-            ILogger<WebApplication> logger,
-            CancellationToken ct) =>
-        {
-            logger.LogDebug(
-                "POST /perplexity/async model={Model}",
-                request.Model);
-
-            try
-            {
-                var job = await apiClient.SubmitAsyncAsync(request, ct);
-                return Results.Ok(job);
-            }
-            catch (HttpRequestException ex)
-            {
-                logger.LogWarning(ex, "Async job submission failed.");
-                return Results.Problem(
-                    title: "Async Job Submission Failed",
-                    detail: ex.Message,
-                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
-            }
-        })
-        .WithName("PerplexityAsyncSubmit");
-
-        /// <summary>
-        /// List all async jobs for the configured API key.
-        /// Returns a list of AsyncJobSummary objects.
-        /// </summary>
-        app.MapGet("/perplexity/async", async (
-            PerplexityApiClient apiClient,
-            ILogger<WebApplication> logger,
-            CancellationToken ct) =>
-        {
-            logger.LogDebug("GET /perplexity/async");
-
-            try
-            {
-                var jobs = await apiClient.ListAsyncJobsAsync(ct);
-                return Results.Ok(jobs);
-            }
-            catch (HttpRequestException ex)
-            {
-                logger.LogWarning(ex, "Failed to list async jobs.");
-                return Results.Problem(
-                    title: "List Async Jobs Failed",
-                    detail: ex.Message,
-                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
-            }
-        })
-        .WithName("PerplexityAsyncList");
-
-        /// <summary>
-        /// Get the status and result of a specific async job by ID.
-        /// Poll this endpoint until status is COMPLETED or FAILED.
-        /// When COMPLETED, the full ChatResponse is included in the response field.
-        /// </summary>
-        app.MapGet("/perplexity/async/{id}", async (
-            string id,
-            PerplexityApiClient apiClient,
-            ILogger<WebApplication> logger,
-            CancellationToken ct) =>
-        {
-            logger.LogDebug("GET /perplexity/async/{JobId}", id);
-
-            try
-            {
-                var job = await apiClient.GetAsyncJobAsync(id, ct);
-                return Results.Ok(job);
-            }
-            catch (HttpRequestException ex)
-            {
-                logger.LogWarning(ex, "Failed to get async job {JobId}.", id);
-                return Results.Problem(
-                    title: "Get Async Job Failed",
-                    detail: ex.Message,
-                    statusCode: (int)(ex.StatusCode ?? HttpStatusCode.BadGateway));
-            }
-        })
-        .WithName("PerplexityAsyncGet");
+        .WithName("PerplexityChatStream")
+        .WithOpenApi();
 
         // -----------------------------------------------------------------------
         // MCP proxy endpoints
@@ -228,7 +139,8 @@ public static class HttpBroker
                     extensions: new Dictionary<string, object?> { ["code"] = ex.Code });
             }
         })
-        .WithName("McpProxy");
+        .WithName("McpProxy")
+        .WithOpenApi();
 
         /// <summary>List all configured MCP servers and their current runtime status.</summary>
         app.MapGet("/mcp/servers", async (
@@ -238,7 +150,8 @@ public static class HttpBroker
             var servers = await mcpManager.ListServersAsync();
             return Results.Ok(servers);
         })
-        .WithName("McpListServers");
+        .WithName("McpListServers")
+        .WithOpenApi();
 
         /// <summary>Restart a specific MCP server by name.</summary>
         app.MapPost("/mcp/servers/{name}/restart", async (
@@ -260,7 +173,8 @@ public static class HttpBroker
                 return Results.Problem(title: "Restart Failed", detail: ex.Message, statusCode: 500);
             }
         })
-        .WithName("McpRestartServer");
+        .WithName("McpRestartServer")
+        .WithOpenApi();
 
         // -----------------------------------------------------------------------
         // Service status and configuration
@@ -276,14 +190,15 @@ public static class HttpBroker
 
             return Results.Ok(new
             {
-                version = "1.2.0",
+                version = "1.0.0",
                 status = "ok",
                 uptime = FormatUptime(uptime),
                 started_at = ServiceStartTime,
                 mcp_servers = servers
             });
         })
-        .WithName("ServiceStatus");
+        .WithName("ServiceStatus")
+        .WithOpenApi();
 
         /// <summary>Return non-sensitive configuration values.</summary>
         app.MapGet("/config", (
@@ -303,7 +218,8 @@ public static class HttpBroker
                 perplexity_api_base_url = config.PerplexityApiBaseUrl
             });
         })
-        .WithName("GetConfig");
+        .WithName("GetConfig")
+        .WithOpenApi();
 
         /// <summary>
         /// Update mutable configuration values at runtime.
@@ -335,7 +251,8 @@ public static class HttpBroker
                 note = "Port and pipe name changes require a service restart."
             });
         })
-        .WithName("UpdateConfig");
+        .WithName("UpdateConfig")
+        .WithOpenApi();
 
         // -----------------------------------------------------------------------
         // WebSocket endpoint for streaming
@@ -370,7 +287,8 @@ public static class HttpBroker
                 logger.LogWarning(ex, "WebSocket session ended with error.");
             }
         })
-        .WithName("WebSocketStream");
+        .WithName("WebSocketStream")
+        .WithOpenApi();
     }
 
     /// <summary>

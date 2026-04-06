@@ -19,7 +19,7 @@
     <!-- Application metadata -->
     <AssemblyName>PerplexityXPC.Tray</AssemblyName>
     <RootNamespace>PerplexityXPC.Tray</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.0.0</Version>
     <Company>PerplexityXPC</Company>
     <Product>PerplexityXPC Tray</Product>
     <Description>System tray application for PerplexityXPC — quick access to Perplexity AI.</Description>
@@ -28,8 +28,8 @@
     <!-- DPI-aware manifest -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
 
-    <!-- Alliance for Empowerment tray icon -->
-    <ApplicationIcon>Resources\alliance-tray.ico</ApplicationIcon>
+    <!-- Embed resources -->
+    <ApplicationIcon>Resources\tray_icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,9 +49,7 @@
 
   <ItemGroup>
     <!-- Windows Service Controller (ServiceController.Start / Stop) -->
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
-    <!-- WMI queries for memory/CPU metrics in DashboardWidget -->
-    <PackageReference Include="System.Management" Version="8.0.0" />
+    <FrameworkReference Include="Microsoft.Windows.Compatibility" />
   </ItemGroup>
 
 </Project>

@@ -324,7 +324,7 @@ internal static class Program
     {
         // Try to send an "open popup" command to the tray application via pipe
         // The tray app listens for { action: "show_popup", query, response } messages
-        Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {

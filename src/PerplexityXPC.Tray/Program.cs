@@ -52,7 +52,7 @@ static void BringExistingInstanceToFront()
             System.IO.Pipes.PipeOptions.None);
 
         // Short timeout — don't block the exit path.
-        pipe.Connect(500);
+        pipe.Connect(timeoutMs: 500);
         using var writer = new System.IO.StreamWriter(pipe);
         writer.WriteLine("SHOW");
         writer.Flush();

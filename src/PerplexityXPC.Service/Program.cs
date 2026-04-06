@@ -175,7 +175,11 @@ try
         });
     });
 
-    // WebSockets are enabled via middleware (UseWebSockets) below.
+    // WebSockets
+    builder.Services.AddWebSockets(options =>
+    {
+        options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+    });
 
     // -----------------------------------------------------------------------
     // Build the app
@@ -240,7 +244,7 @@ return 0;
 /// Silently logs and continues on failure (firewall is defense-in-depth;
 /// Kestrel's loopback binding is the primary protection).
 /// </summary>
-static void AddFirewallRule(int port, Microsoft.Extensions.Logging.ILogger logger)
+static void AddFirewallRule(int port, ILogger logger)
 {
     const string RuleName = "PerplexityXPC-Block-Inbound";
 

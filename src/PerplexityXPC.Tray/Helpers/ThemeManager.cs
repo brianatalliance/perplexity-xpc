@@ -117,7 +117,6 @@ public static class ThemeManager
     {
         ctrl.ForeColor = p.Text;
 
-        // Order matters: most-derived types must come before their base types.
         switch (ctrl)
         {
             // ── Forms ──────────────────────────────────────────────────────────
@@ -125,14 +124,22 @@ public static class ThemeManager
                 form.BackColor = p.Background;
                 break;
 
-            // ── Panels (specific subtypes before Panel) ───────────────────────
+            // ── Panels & group boxes ───────────────────────────────────────────
             case GroupBox gb:
                 gb.BackColor = p.Background;
                 gb.ForeColor = p.TextSecondary;
                 break;
 
+            case Panel panel:
+                panel.BackColor = p.Surface;
+                break;
+
             case TabPage tp:
                 tp.BackColor = p.Background;
+                break;
+
+            case TabControl:
+                ctrl.BackColor = p.Background;
                 break;
 
             case FlowLayoutPanel flp:
@@ -143,24 +150,16 @@ public static class ThemeManager
                 tlp.BackColor = p.Background;
                 break;
 
-            case Panel panel:
-                panel.BackColor = p.Surface;
-                break;
-
-            case TabControl:
-                ctrl.BackColor = p.Background;
-                break;
-
-            // ── Text inputs (RichTextBox before TextBox) ──────────────────────
-            case RichTextBox rtb:
-                rtb.BackColor = p.Surface;
-                rtb.ForeColor = p.Text;
-                break;
-
+            // ── Text inputs ────────────────────────────────────────────────────
             case TextBox tb:
                 tb.BackColor   = p.Surface;
                 tb.ForeColor   = p.Text;
                 tb.BorderStyle = BorderStyle.FixedSingle;
+                break;
+
+            case RichTextBox rtb:
+                rtb.BackColor = p.Surface;
+                rtb.ForeColor = p.Text;
                 break;
 
             case ComboBox cb:
@@ -169,17 +168,17 @@ public static class ThemeManager
                 cb.FlatStyle = FlatStyle.Flat;
                 break;
 
-            // ── Labels (LinkLabel before Label) ───────────────────────────────
+            // ── Labels ────────────────────────────────────────────────────────
+            case Label lbl:
+                lbl.BackColor = Color.Transparent;
+                lbl.ForeColor = p.Text;
+                break;
+
             case LinkLabel ll:
                 ll.BackColor  = Color.Transparent;
                 ll.ForeColor  = p.Accent;
                 ll.LinkColor  = p.Accent;
                 ll.ActiveLinkColor = p.Accent;
-                break;
-
-            case Label lbl:
-                lbl.BackColor = Color.Transparent;
-                lbl.ForeColor = p.Text;
                 break;
 
             // ── Buttons ───────────────────────────────────────────────────────

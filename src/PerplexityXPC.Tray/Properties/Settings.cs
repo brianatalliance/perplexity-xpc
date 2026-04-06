@@ -53,12 +53,12 @@ internal sealed class Settings : ApplicationSettingsBase
 
     // ── General ────────────────────────────────────────────────────────────────
 
-    /// <summary>Global hotkey string, e.g. <c>"Ctrl+Shift+A"</c>.</summary>
+    /// <summary>Global hotkey string, e.g. <c>"Ctrl+Shift+P"</c>.</summary>
     [UserScopedSetting]
-    [DefaultSettingValue("Ctrl+Shift+A")]
+    [DefaultSettingValue("Ctrl+Shift+P")]
     public string Hotkey
     {
-        get => (string)(this[nameof(Hotkey)] ?? "Ctrl+Shift+A");
+        get => (string)(this[nameof(Hotkey)] ?? "Ctrl+Shift+P");
         set => this[nameof(Hotkey)] = value;
     }
 
@@ -87,25 +87,5 @@ internal sealed class Settings : ApplicationSettingsBase
     {
         get => (string)(this[nameof(LastModel)] ?? "sonar");
         set => this[nameof(LastModel)] = value;
-    }
-
-    // ── Dashboard widget position ──────────────────────────────────────────────
-
-    /// <summary>Saved X position of the dashboard widget (0 = use default).</summary>
-    [UserScopedSetting]
-    [DefaultSettingValue("0")]
-    public int DashboardX
-    {
-        get => (int)(this[nameof(DashboardX)] ?? 0);
-        set => this[nameof(DashboardX)] = value;
-    }
-
-    /// <summary>Saved Y position of the dashboard widget (0 = use default).</summary>
-    [UserScopedSetting]
-    [DefaultSettingValue("0")]
-    public int DashboardY
-    {
-        get => (int)(this[nameof(DashboardY)] ?? 0);
-        set => this[nameof(DashboardY)] = value;
     }
 }

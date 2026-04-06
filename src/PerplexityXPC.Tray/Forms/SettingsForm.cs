@@ -116,7 +116,7 @@ public sealed class SettingsForm : Form
         var hotkeyLabel = MakeLabel("Global Hotkey:");
         _hotkeyBox = new TextBox
         {
-            Text        = "Ctrl+Shift+A",
+            Text        = "Ctrl+Shift+P",
             Width       = 140,
             ReadOnly    = true,
             BackColor   = SurfaceColor,

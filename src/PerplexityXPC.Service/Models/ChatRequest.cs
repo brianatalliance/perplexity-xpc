@@ -4,14 +4,9 @@ namespace PerplexityXPC.Service.Models;
 
 /// <summary>
 /// Represents a chat completion request to the Perplexity Sonar API.
-/// Supports all parameters available to Enterprise Pro Max subscribers.
 /// </summary>
 public sealed class ChatRequest
 {
-    // -------------------------------------------------------------------------
-    // Required fields
-    // -------------------------------------------------------------------------
-
     /// <summary>
     /// The Sonar model to use for the request.
     /// Valid values: sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research
@@ -25,112 +20,47 @@ public sealed class ChatRequest
     [JsonPropertyName("messages")]
     public List<Message> Messages { get; set; } = [];
 
-    // -------------------------------------------------------------------------
-    // Generation parameters
-    // -------------------------------------------------------------------------
-
     /// <summary>
-    /// Maximum number of tokens to generate in the response (0-128000).
-    /// </summary>
-    [JsonPropertyName("max_tokens")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? MaxTokens { get; set; }
-
-    /// <summary>
-    /// Whether to stream the response via Server-Sent Events.
-    /// </summary>
-    [JsonPropertyName("stream")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? Stream { get; set; }
-
-    /// <summary>
-    /// Stop sequence(s). The model stops generating when it produces this token or
-    /// one of these tokens. Can be a single string or an array of strings.
-    /// Serialized as an array; a single string value should be wrapped in a list.
-    /// </summary>
-    [JsonPropertyName("stop")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? Stop { get; set; }
-
-    /// <summary>
-    /// Sampling temperature between 0 and 2. Higher values produce more random
-    /// output. Default: 0.2.
+    /// Sampling temperature between 0 and 2. Higher values produce more random output.
     /// </summary>
     [JsonPropertyName("temperature")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public float? Temperature { get; set; }
 
     /// <summary>
-    /// Nucleus sampling probability mass between 0 and 1. Default: 0.9.
+    /// Nucleus sampling probability mass. Values between 0 and 1.
     /// </summary>
     [JsonPropertyName("top_p")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public float? TopP { get; set; }
 
     /// <summary>
-    /// Response format constraint for structured JSON output via json_schema.
+    /// Maximum number of tokens to generate in the response.
     /// </summary>
-    [JsonPropertyName("response_format")]
+    [JsonPropertyName("max_tokens")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ResponseFormat? ResponseFormat { get; set; }
+    public int? MaxTokens { get; set; }
 
     /// <summary>
-    /// Controls how much of the streamed response is sent.
-    /// Values: "full" (complete response) or "concise" (summary only).
-    /// </summary>
-    [JsonPropertyName("stream_mode")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? StreamMode { get; set; }
-
-    /// <summary>
-    /// Reasoning effort level for sonar-reasoning-pro model only.
-    /// Values: "minimal", "low", "medium", "high".
-    /// </summary>
-    [JsonPropertyName("reasoning_effort")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ReasoningEffort { get; set; }
-
-    /// <summary>
-    /// Preferred response language as an ISO 639-1 code (e.g., "en", "fr", "de").
-    /// </summary>
-    [JsonPropertyName("language_preference")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? LanguagePreference { get; set; }
-
-    // -------------------------------------------------------------------------
-    // Search control parameters
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Search mode for retrieval.
-    /// Values: "web" (default), "academic", "sec".
+    /// Search mode for retrieval. Values: "web" (default) or "academic".
     /// </summary>
     [JsonPropertyName("search_mode")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? SearchMode { get; set; }
 
     /// <summary>
-    /// When true, disables all web search and the model responds from training
-    /// data only.
+    /// Restrict web search results to specific domains (e.g. ["nytimes.com", "bbc.com"]).
     /// </summary>
-    [JsonPropertyName("disable_search")]
+    [JsonPropertyName("search_domain_filter")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? DisableSearch { get; set; }
+    public List<string>? DomainFilter { get; set; }
 
     /// <summary>
-    /// When true, enables the search classifier which automatically selects the
-    /// best search strategy for the query.
+    /// Restrict results to a time window. Values: "month", "week", "day", "hour".
     /// </summary>
-    [JsonPropertyName("enable_search_classifier")]
+    [JsonPropertyName("search_recency_filter")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? EnableSearchClassifier { get; set; }
-
-    /// <summary>
-    /// Additional web search options for fine-grained control.
-    /// </summary>
-    [JsonPropertyName("web_search_options")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public System.Text.Json.JsonElement? WebSearchOptions { get; set; }
+    public string? RecencyFilter { get; set; }
 
     /// <summary>
     /// Whether to include images in the response.
@@ -147,71 +77,18 @@ public sealed class ChatRequest
     public bool? ReturnRelatedQuestions { get; set; }
 
     /// <summary>
-    /// Restrict web search results to specific domains (e.g., ["nytimes.com"]).
+    /// Response format constraint (e.g., JSON schema).
     /// </summary>
-    [JsonPropertyName("search_domain_filter")]
+    [JsonPropertyName("response_format")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? DomainFilter { get; set; }
+    public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
-    /// Restrict search results to content in the specified language codes
-    /// (ISO 639-1, e.g., ["en", "fr"]).
+    /// Whether to stream the response via SSE.
     /// </summary>
-    [JsonPropertyName("search_language_filter")]
+    [JsonPropertyName("stream")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? SearchLanguageFilter { get; set; }
-
-    /// <summary>
-    /// Restrict results to a time window relative to now.
-    /// Values: "hour", "day", "week", "month", "year".
-    /// </summary>
-    [JsonPropertyName("search_recency_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? RecencyFilter { get; set; }
-
-    /// <summary>
-    /// Only include results published after this date (MM/DD/YYYY format).
-    /// </summary>
-    [JsonPropertyName("search_after_date_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? SearchAfterDateFilter { get; set; }
-
-    /// <summary>
-    /// Only include results published before this date (MM/DD/YYYY format).
-    /// </summary>
-    [JsonPropertyName("search_before_date_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? SearchBeforeDateFilter { get; set; }
-
-    /// <summary>
-    /// Only include results last updated before this date (MM/DD/YYYY format).
-    /// </summary>
-    [JsonPropertyName("last_updated_before_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? LastUpdatedBeforeFilter { get; set; }
-
-    /// <summary>
-    /// Only include results last updated after this date (MM/DD/YYYY format).
-    /// </summary>
-    [JsonPropertyName("last_updated_after_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? LastUpdatedAfterFilter { get; set; }
-
-    /// <summary>
-    /// Restrict returned images to specific file formats (e.g., ["jpg", "png"]).
-    /// Only applicable when ReturnImages is true.
-    /// </summary>
-    [JsonPropertyName("image_format_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? ImageFormatFilter { get; set; }
-
-    /// <summary>
-    /// Restrict returned images to those hosted on specific domains.
-    /// Only applicable when ReturnImages is true.
-    /// </summary>
-    [JsonPropertyName("image_domain_filter")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? ImageDomainFilter { get; set; }
+    public bool? Stream { get; set; }
 }
 
 /// <summary>
@@ -233,7 +110,7 @@ public sealed class Message
 }
 
 /// <summary>
-/// Specifies the format of the model's response for structured output.
+/// Specifies the format of the model's response.
 /// </summary>
 public sealed class ResponseFormat
 {

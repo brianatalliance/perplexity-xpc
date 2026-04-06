@@ -4,7 +4,6 @@ namespace PerplexityXPC.Service.Models;
 
 /// <summary>
 /// Represents a chat completion response from the Perplexity Sonar API.
-/// Covers all fields returned for Enterprise Pro Max subscribers.
 /// </summary>
 public sealed class ChatResponse
 {
@@ -15,7 +14,7 @@ public sealed class ChatResponse
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// The object type. Always "chat.completion" for non-streaming responses.
+    /// The object type. Always "chat.completion".
     /// </summary>
     [JsonPropertyName("object")]
     public string Object { get; set; } = "chat.completion";
@@ -39,13 +38,6 @@ public sealed class ChatResponse
     public List<Choice> Choices { get; set; } = [];
 
     /// <summary>
-    /// Token usage statistics and cost breakdown for this request.
-    /// </summary>
-    [JsonPropertyName("usage")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public UsageInfo? Usage { get; set; }
-
-    /// <summary>
     /// Source URLs cited in the model's response.
     /// </summary>
     [JsonPropertyName("citations")]
@@ -53,27 +45,32 @@ public sealed class ChatResponse
     public List<string>? Citations { get; set; }
 
     /// <summary>
+    /// Token usage statistics for this request.
+    /// </summary>
+    [JsonPropertyName("usage")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public UsageInfo? Usage { get; set; }
+
+    /// <summary>
     /// Web search results used to ground the response.
-    /// Populated when search_results are included in the upstream response.
     /// </summary>
     [JsonPropertyName("search_results")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<SearchResult>? SearchResults { get; set; }
 
     /// <summary>
-    /// Images returned when return_images is true in the request.
-    /// </summary>
-    [JsonPropertyName("images")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<ImageResult>? Images { get; set; }
-
-    /// <summary>
     /// Related questions suggested by the model.
-    /// Populated when return_related_questions is true in the request.
     /// </summary>
     [JsonPropertyName("related_questions")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? RelatedQuestions { get; set; }
+
+    /// <summary>
+    /// Images returned when return_images is true.
+    /// </summary>
+    [JsonPropertyName("images")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<ImageResult>? Images { get; set; }
 }
 
 /// <summary>
@@ -88,23 +85,20 @@ public sealed class Choice
     public int Index { get; set; }
 
     /// <summary>
-    /// The generated message (non-streaming responses).
+    /// The generated message.
     /// </summary>
     [JsonPropertyName("message")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public Message? Message { get; set; }
+    public Message Message { get; set; } = new();
 
     /// <summary>
-    /// The delta content chunk for streaming responses.
-    /// Present only in streaming (SSE) mode.
+    /// The delta for streaming responses.
     /// </summary>
     [JsonPropertyName("delta")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public MessageDelta? Delta { get; set; }
 
     /// <summary>
-    /// Reason the model stopped generating.
-    /// Values: stop, length, content_filter.
+    /// Reason the model stopped generating. Values: stop, length, content_filter.
     /// </summary>
     [JsonPropertyName("finish_reason")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -112,20 +106,19 @@ public sealed class Choice
 }
 
 /// <summary>
-/// Streaming delta content for a choice in an SSE response.
+/// Streaming delta content for a choice.
 /// </summary>
 public sealed class MessageDelta
 {
     /// <summary>
     /// The role of the message author in this delta.
-    /// Present only in the first chunk.
     /// </summary>
     [JsonPropertyName("role")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Role { get; set; }
 
     /// <summary>
-    /// The partial content chunk for this delta event.
+    /// The partial content chunk in this delta.
     /// </summary>
     [JsonPropertyName("content")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -133,7 +126,7 @@ public sealed class MessageDelta
 }
 
 /// <summary>
-/// Token usage statistics and cost breakdown for a completion request.
+/// Token usage statistics for a completion request.
 /// </summary>
 public sealed class UsageInfo
 {
@@ -148,43 +141,6 @@ public sealed class UsageInfo
     /// <summary>Total tokens consumed (prompt + completion).</summary>
     [JsonPropertyName("total_tokens")]
     public int TotalTokens { get; set; }
-
-    /// <summary>
-    /// The size category of the search context used (e.g., "low", "medium", "high").
-    /// Enterprise-specific field.
-    /// </summary>
-    [JsonPropertyName("search_context_size")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? SearchContextSize { get; set; }
-
-    /// <summary>
-    /// Detailed cost breakdown for this request. Enterprise Pro Max field.
-    /// </summary>
-    [JsonPropertyName("cost")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public CostBreakdown? Cost { get; set; }
-}
-
-/// <summary>
-/// Detailed cost breakdown for an API request (Enterprise Pro Max).
-/// </summary>
-public sealed class CostBreakdown
-{
-    /// <summary>Cost attributed to input/prompt tokens.</summary>
-    [JsonPropertyName("input_tokens_cost")]
-    public double InputTokensCost { get; set; }
-
-    /// <summary>Cost attributed to output/completion tokens.</summary>
-    [JsonPropertyName("output_tokens_cost")]
-    public double OutputTokensCost { get; set; }
-
-    /// <summary>Fixed per-request cost.</summary>
-    [JsonPropertyName("request_cost")]
-    public double RequestCost { get; set; }
-
-    /// <summary>Total cost for this request (input + output + request).</summary>
-    [JsonPropertyName("total_cost")]
-    public double TotalCost { get; set; }
 }
 
 /// <summary>
@@ -200,28 +156,23 @@ public sealed class SearchResult
     [JsonPropertyName("url")]
     public string Url { get; set; } = string.Empty;
 
-    /// <summary>Publication or indexed date of the page (ISO 8601 or human-readable).</summary>
-    [JsonPropertyName("date")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Date { get; set; }
-
-    /// <summary>The date the page was last updated, if available.</summary>
-    [JsonPropertyName("last_updated")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? LastUpdated { get; set; }
-
-    /// <summary>A brief excerpt or summary from the page.</summary>
+    /// <summary>A brief excerpt from the page.</summary>
     [JsonPropertyName("snippet")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Snippet { get; set; }
+
+    /// <summary>Publication or last-updated date of the page.</summary>
+    [JsonPropertyName("date")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Date { get; set; }
 }
 
 /// <summary>
-/// An image result returned when return_images is true in the request.
+/// An image result returned when return_images is true.
 /// </summary>
 public sealed class ImageResult
 {
-    /// <summary>The direct URL to the image file.</summary>
+    /// <summary>The image URL.</summary>
     [JsonPropertyName("url")]
     public string Url { get; set; } = string.Empty;
 

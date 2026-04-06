@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Registers or unregisters PerplexityXPC Explorer context menu entries.
 
@@ -33,7 +33,7 @@
 
 .NOTES
     Compatible with PowerShell 5.1 and PowerShell 7+.
-    HKCU-only - does NOT require elevation.
+    HKCU-only — does NOT require elevation.
 #>
 
 #region Parameters
@@ -146,7 +146,7 @@ if ($Unregister) {
 #region Validate executable exists
 if (-not (Test-Path $contextMenuExe)) {
     Write-Warn "ContextMenu executable not found at: $contextMenuExe"
-    Write-Warn "Proceeding with registration - ensure the exe is placed there before using the menu."
+    Write-Warn "Proceeding with registration — ensure the exe is placed there before using the menu."
 }
 #endregion
 
@@ -250,7 +250,7 @@ try {
     $sendToLinkPath  = Join-Path $sendToDir "Ask Perplexity.lnk"
 
     if ($PSCmdlet.ShouldProcess($sendToLinkPath, "Create SendTo shortcut")) {
-        # Use WScript.Shell COM object - works on both PS 5.1 and PS 7
+        # Use WScript.Shell COM object — works on both PS 5.1 and PS 7
         $wscriptShell = New-Object -ComObject WScript.Shell
         $shortcut     = $wscriptShell.CreateShortcut($sendToLinkPath)
         $shortcut.TargetPath       = $contextMenuExe

@@ -25,6 +25,7 @@ PerplexityXPC runs a Windows Service that binds exclusively to `127.0.0.1:47777`
 - [Contributing](#contributing)
 - [License](#license)
 - [Related Projects](#related-projects)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -542,12 +543,20 @@ PerplexityXPC/
 
 ## Author
 
-**Brian Vicente** — Network Coordinator & Cybersecurity Admin, [Alliance for Empowerment](https://www.allianceforempowerment.org)
+**Brian Vicente** — Network Coordinator & Cybersecurity Admin
 
-GitHub: [@brianatalliance](https://github.com/brianatalliance)
+Built with [Perplexity Computer](https://computer.perplexity.ai)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
+
+## Acknowledgments
+
+- [Perplexity AI](https://www.perplexity.ai/) for the Sonar API and models that power this integration
+- [.NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) for the cross-platform runtime and self-contained executable support
+- [WPF (Windows Presentation Foundation)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/) for the tray application UI framework
+- [Serilog](https://serilog.net/) for structured, rolling-file diagnostic logging
+- [Model Context Protocol](https://modelcontextprotocol.io/) for the open standard enabling local tool integration with AI models

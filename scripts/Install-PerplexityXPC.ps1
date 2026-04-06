@@ -1,6 +1,6 @@
-﻿<#
+<#
 .SYNOPSIS
-    Installs PerplexityXPC - a local AI broker for Perplexity API and MCP servers.
+    Installs PerplexityXPC — a local AI broker for Perplexity API and MCP servers.
 
 .DESCRIPTION
     This installer performs pre-flight checks, creates the install directory, registers
@@ -97,7 +97,7 @@ function Test-IsAdmin {
 
 #region Self-elevation
 if (-not (Test-IsAdmin)) {
-    Write-Warn "Not running as Administrator - re-launching elevated..."
+    Write-Warn "Not running as Administrator — re-launching elevated..."
     $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
     if ($ApiKey)         { $argList += "-ApiKey `"$ApiKey`"" }
     if ($InstallPath -ne "C:\Program Files\PerplexityXPC") { $argList += "-InstallPath `"$InstallPath`"" }
@@ -152,7 +152,7 @@ $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 $npxCmd  = Get-Command npx  -ErrorAction SilentlyContinue
 if ($nodeCmd -and $npxCmd) {
     $nodeVersion = & node --version 2>$null
-    Write-Success "Node.js detected ($nodeVersion) - MCP servers will work"
+    Write-Success "Node.js detected ($nodeVersion) — MCP servers will work"
 } else {
     Write-Warn "Node.js / npx not found. MCP server features will be unavailable."
     Write-Warn "  Install from: https://nodejs.org"
@@ -230,7 +230,7 @@ if ($PSCmdlet.ShouldProcess($dataDir, "Create data directory")) {
         Set-Content -Path $appSettingsPath -Value $appSettings -Encoding UTF8
         Write-Success "Created default appsettings.json"
     } else {
-        Write-Status "  [SKIP] appsettings.json already exists - not overwritten" -Color DarkGray
+        Write-Status "  [SKIP] appsettings.json already exists — not overwritten" -Color DarkGray
     }
 
     # --- default mcp-servers.json ---
@@ -244,14 +244,14 @@ if ($PSCmdlet.ShouldProcess($dataDir, "Create data directory")) {
                     disabled    = $true
                     command     = "npx"
                     args        = @("-y", "@modelcontextprotocol/server-filesystem", "C:\Users\$env:USERNAME\Documents")
-                    description = "Filesystem MCP server (example - set disabled: false to activate)"
+                    description = "Filesystem MCP server (example — set disabled: false to activate)"
                 }
             }
         } | ConvertTo-Json -Depth 6
         Set-Content -Path $mcpConfigPath -Value $mcpConfig -Encoding UTF8
         Write-Success "Created default mcp-servers.json"
     } else {
-        Write-Status "  [SKIP] mcp-servers.json already exists - not overwritten" -Color DarkGray
+        Write-Status "  [SKIP] mcp-servers.json already exists — not overwritten" -Color DarkGray
     }
 }
 #endregion
@@ -271,7 +271,7 @@ if ($ApiKey -and $ApiKey.Trim() -ne '') {
     $ApiKey = $ApiKey.Trim()
 
     if ($PSCmdlet.ShouldProcess("DPAPI credential store", "Store Perplexity API key")) {
-        # Store encrypted via DPAPI - only decryptable by same user on same machine
+        # Store encrypted via DPAPI — only decryptable by same user on same machine
         $secureKey   = ConvertTo-SecureString -String $ApiKey -AsPlainText -Force
         $encryptedB64 = $secureKey | ConvertFrom-SecureString
         $credFile     = Join-Path $dataDir "api-key.enc"
@@ -306,7 +306,7 @@ if ($PSCmdlet.ShouldProcess("Windows Firewall", "Add rule to block external acce
             -Profile       Any `
             -Enabled       True | Out-Null
 
-        Write-Success "Firewall rule added - port 47777 blocked from non-localhost addresses"
+        Write-Success "Firewall rule added — port 47777 blocked from non-localhost addresses"
     } catch {
         Write-Warn "Could not create firewall rule: $_"
         Write-Warn "Manually ensure port 47777 is not publicly accessible."
@@ -364,7 +364,7 @@ if (-not $NoContextMenu) {
         if (Test-Path $registerScript) {
             & $registerScript -InstallPath $InstallPath -ErrorAction Continue
         } else {
-            Write-Warn "Register-ContextMenu.ps1 not found in $scriptDir - skipping context menu setup."
+            Write-Warn "Register-ContextMenu.ps1 not found in $scriptDir — skipping context menu setup."
             Write-Warn "Run Register-ContextMenu.ps1 manually after copying it to the scripts folder."
         }
     }
